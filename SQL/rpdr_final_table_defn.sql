@@ -15,28 +15,28 @@ select
 , cntstnt.age
 , cntstnt.dob
 , cntstnt.hometown
-, episode.season
-, episode.episode
-, episode.airdate
-, episode.special
-, episode.finale
-, episode.nickname
-, episode.runwaytheme
-, episode.numqueens
-, episode.minic
-, episode.minicw1
-, episode.minicw2
-, episode.minicw3
-, episode.bottom1
-, episode.bottom2
-, episode.bottom3
-, episode.bottom4
-, episode.bottom5
-, episode.bottom6
-, episode.lipsyncartist
-, episode.lipsyncsong
-, episode.eliminated1
-, episode.eliminated2
+, episds.season
+, episds.episode
+, episds.airdate
+, episds.special
+, episds.finale
+, episds.nickname
+, episds.runwaytheme
+, episds.numqueens
+, episds.minic
+, episds.minicw1
+, episds.minicw2
+, episds.minicw3
+, episds.bottom1
+, episds.bottom2
+, episds.bottom3
+, episds.bottom4
+, episds.bottom5
+, episds.bottom6
+, episds.lipsyncartist
+, episds.lipsyncsong
+, episds.eliminated1
+, episds.eliminated2
 
 FROM cntstnt_ep
 
@@ -51,3 +51,5 @@ LEFT JOIN episds
   ON cntstnt_ep.season=episds.season
   
   AND cntstnt_ep.episode=episds.episode
+  
+limit 1

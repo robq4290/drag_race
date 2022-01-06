@@ -26,7 +26,7 @@ episodes <- dragracer::rpdr_ep
 ```{r}
 get_df_col_names_selectable(contestants_episode, "cntstnt_ep") 
 get_df_col_names_selectable(contestants, "cntstnt")
-get_df_col_names_selectable(episodes, "episode")
+get_df_col_names_selectable(episodes, "episds")
 ```
 
 
@@ -34,11 +34,11 @@ get_df_col_names_selectable(episodes, "episode")
 rpdr_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
 df_tst <- db_exec_query(  db_conn = rpdr_conn
                         , file_location = "SQL"
-                        , file_name = "example_join.sql")
-
+                        , file_name = "rpdr_final_table_defn.sql")
+DBI::dbDisconnect(rpdr_conn)
 ```
 
 ```{r}
-DBI::dbDisconnect(rpdr_conn)
+
 ```
 
