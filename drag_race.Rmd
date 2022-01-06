@@ -62,7 +62,13 @@ db_create_table( db_conn=rpdr_conn
 
 ```{r}
 rpdr_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
+df_tst <- db_exec_query(  db_conn = rpdr_conn
+                        , file_location = "SQL"
+                        , file_name = "example_join.sql")
 
+```
 
+```{r}
+DBI::dbDisconnect(rpdr_conn)
 ```
 
