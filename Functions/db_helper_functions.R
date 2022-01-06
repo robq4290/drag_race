@@ -39,5 +39,7 @@ db_create_table <- function(db_conn, file_location, file_name, df_in, tbl_name,.
                                                , column_names=col_names_sql
                                                , primary_key_cols=pk_vals_sql
   )
-  sql_param_statement
+  DBI::dbExecute(conn=db_conn, statement= sql_param_statement)
+  
+  DBI::dbWriteTable(conn=db_conn, name=tbl_name, value=df_in, append=TRUE, row.names=FALSE)
 }

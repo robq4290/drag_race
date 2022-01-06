@@ -24,23 +24,45 @@ episodes <- dragracer::rpdr_ep
 ```
 
 
-```{r create sqlite database to load frames, echo=FALSE}
+```{r create sqlite database to load frames}
 rpdr_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
 
 # create tables and define primary keys
 
-#DBI::dbWriteTable(conn=db_conn, name="cntstnt_ep", value = contestants_episode)
+# Contestant Episode
+db_create_table( db_conn=rpdr_conn
+                , file_location = "SQL"
+                , file_name = "db_create_table.sql"
+                , df_in = contestants_episode
+                , tbl_name = "cntstnt_ep"
+                , pk_val=list("contestant","season","episode")
+                )
+
+# Contestant
+db_create_table( db_conn=rpdr_conn
+                , file_location = "SQL"
+                , file_name = "db_create_table.sql"
+                , df_in = contestants
+                , tbl_name = "cntstnt"
+                , pk_val=list("contestant","season")
+                )
+
+# Episodes
+
+db_create_table( db_conn=rpdr_conn
+                , file_location = "SQL"
+                , file_name = "db_create_table.sql"
+                , df_in = episodes
+                , tbl_name = "episds"
+                , pk_val=list("season","episode")
+                )
+
 ```
 
 
 ```{r}
 rpdr_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
-db_create_table( db_conn=rpdr_conn
-                , file_location = "SQL"
-                , file_name = "db_create_table.sql"
-                , df_in = contestants
-                , tbl_name = "test"
-                #, pk_val=list("col_name","col_name_2","col_name_3")
-                )
+
+
 ```
 
