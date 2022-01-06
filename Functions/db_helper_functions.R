@@ -45,6 +45,16 @@ db_create_table <- function(db_conn, file_location, file_name, df_in, tbl_name,.
 }
 
 
+#' Title
+#'
+#' @param db_conn 
+#' @param file_location 
+#' @param file_name 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 db_exec_query <- function(db_conn, file_location, file_name){
   
   sql_file <- readr::read_file(file=here::here(file_location,file_name))
