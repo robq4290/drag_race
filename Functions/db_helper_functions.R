@@ -55,13 +55,15 @@ db_create_table <- function(db_conn, file_location, file_name, df_in, tbl_name,.
 #' @export
 #'
 #' @examples
-db_exec_query <- function(db_conn, file_location, file_name){
+db_exec_query <- function(db_conn, file_location, file_name, print_query=FALSE){
   
   sql_file <- readr::read_file(file=here::here(file_location,file_name))
   
   sql_statement <- DBI::sqlInterpolate(  conn=db_conn, sql=sql_file)
+  if(print_query){
+    print(sql_statement)
+  }
   
-  print(sql_statement)
   
   results <- DBI::dbGetQuery(conn=db_conn, statement=sql_statement)
   
