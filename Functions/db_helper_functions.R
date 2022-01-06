@@ -67,3 +67,14 @@ db_exec_query <- function(db_conn, file_location, file_name){
   
   results
 }
+
+get_df_col_names_selectable <- function(df_in, alias){
+  
+  df_cols <- colnames(df_in)
+  
+  alias_cols <- glue("{alias}.{df_cols}")
+  
+  select_out <- glue_collapse(alias_cols,sep = "\n, ")
+  
+  return(select_out)
+}
