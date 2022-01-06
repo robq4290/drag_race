@@ -5,24 +5,42 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(DBI)
+library(dragracer)
+library(glue)
+library(here)
+library(flexdashboard)
+source(here("Functions","db_helper_functions.R"))
 ```
 
-## R Markdown
+```{r read in data from dragracer, ehco=FALSE}
+contestants_episode <- dragracer::rpdr_contep
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+contestants <- dragracer::rpdr_contestants
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+episodes <- dragracer::rpdr_ep
 
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+```{r create sqlite database to load frames, echo=FALSE}
+rpdr_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+# create tables and define primary keys
+
+#DBI::dbWriteTable(conn=db_conn, name="cntstnt_ep", value = contestants_episode)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+rpdr_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
+db_create_table( db_conn=rpdr_conn
+                , file_location = "SQL"
+                , file_name = "db_create_table.sql"
+                , df_in = contestants
+                , tbl_name = "test"
+                , pk_val=c("col_name","col_name_2")
+                )
+```
+
