@@ -1,7 +1,7 @@
 select 
     cntstnt_ep.season
   , cntstnt_ep.episode
-  , strftime("%m-%d-%Y",episds.airdate, 'unixepoch')--strftime("%m-%d-%Y", date_col, 'unixepoch')
+  , episds.airdate-- not ideal, but I am going to use lubridate to convert to date and then character
   , episds.nickname
   , episds.special
   , cntstnt_ep.penultimate
@@ -14,7 +14,7 @@ select
   , cntstnt_ep.rank
   , cntstnt_ep.missc
   , cntstnt.age
-  , cntstnt.dob
+  , cntstnt.dob-- not ideal, but I am going to use lubridate to convert to date and then character
   , cntstnt.hometown
   , cntstnt_ep.outcome
   , cntstnt_ep.minichalw
