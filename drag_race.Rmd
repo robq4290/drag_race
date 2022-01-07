@@ -18,6 +18,15 @@ source(here("Functions","db_helper_functions.R"))
 ```{r read in rpdr_hist table, echo=FALSE, include=FALSE}
 rpdr_conn <- rpdr_connection()
 
-rpdr_his <-db_exec_param_query(db_conn=rpdr_conn, file_location = "SQL", file_name = "select_all_tbl.sql",table_name=DBI::SQL("rpdr_hist"))
+rpdr_hist <-db_exec_param_query(db_conn=rpdr_conn, file_location = "SQL", file_name = "select_all_tbl.sql",table_name=DBI::SQL("rpdr_hist"))
+
+DBI::dbDisconnect(rpdr_conn)
+```
+
+
+```{r Home Town Heros, ehco=FALSE, include=FALSE}
+rpdr_conn <- rpdr_connection()
+home_town_df <- db_exec_param_query(db_conn=rpdr_conn, file_location = "SQL", file_name = "home_town_heros.sql")
+DBI::dbDisconnect(rpdr_conn)
 ```
 
