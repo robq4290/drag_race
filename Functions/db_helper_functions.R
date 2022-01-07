@@ -80,3 +80,22 @@ get_df_col_names_selectable <- function(df_in, alias){
   
   return(select_out)
 }
+
+rpdr_connection <- function(){
+  DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
+}
+
+db_exec_param_query <- function(db_conn, file_location, file_name, print_query=FALSE,...){
+  
+  sql_file <- readr::read_file(file=here::here(file_location,file_name))
+  
+  sql_statement <- DBI::sqlInterpolate(  conn=db_conn, sql=sql_file,...)
+  if(print_query){
+    print(sql_statement)
+  }
+  
+  
+  results <- DBI::dbGetQuery(conn=db_conn, statement=sql_statement)
+  
+  results
+}

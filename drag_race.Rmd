@@ -15,24 +15,9 @@ source(here("Functions","db_helper_functions.R"))
 ```
 
 
-```{r manuall set the date columns to characters}
-# This is way different from the flavors of SQL I am used to... this is not my
-# ideal route but it gets the job done. Could potentially create lookup tables
-# with all of the dates based off of season/episode and dob but it seems a bit much
-# Will have to update the table definitions so that there is some documentation
-# noting the workaround that is taken in R.... alternatively I could just delete all of the tables
-# and rewrite them with the as.character mutate. Analysis first, make pretty later
-rpdr_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
-rpdr_final_tbl <- db_exec_query(  db_conn = rpdr_conn
-                        , file_location = "SQL"
-                        , file_name = "rpdr_final_table_defn.sql") %>% 
-  mutate(  airdate=as.character(lubridate::as_date(airdate))
-         , dob=as.character(lubridate::as_date(dob)))
+```{r read in rpdr_hist table, echo=FALSE, include=FALSE}
+rpdr_conn <- rpdr_connection()
 
-
-  DBI::dbWriteTable(conn=rpdr_conn, name="rpdr_hist", value=rpdr_final_tbl, append=TRUE, row.names=FALSE)
-DBI::dbDisconnect(rpdr_conn)
+rpdr_his <-db_exec_param_query(db_conn=rpdr_conn, file_location = "SQL", file_name = "select_all_tbl.sql",table_name=DBI::SQL("rpdr_hist"))
 ```
-
-
 
