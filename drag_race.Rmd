@@ -14,21 +14,6 @@ library(flexdashboard)
 source(here("Functions","db_helper_functions.R"))
 ```
 
-```{r read in data from dragracer, ehco=FALSE}
-contestants_episode <- dragracer::rpdr_contep
-
-contestants <- dragracer::rpdr_contestants
-
-episodes <- dragracer::rpdr_ep
-
-```
-
-```{r}
-get_df_col_names_selectable(contestants_episode, "cntstnt_ep") 
-get_df_col_names_selectable(contestants, "cntstnt")
-get_df_col_names_selectable(episodes, "episds")
-```
-
 
 ```{r}
 rpdr_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
@@ -38,7 +23,5 @@ df_tst <- db_exec_query(  db_conn = rpdr_conn
 DBI::dbDisconnect(rpdr_conn)
 ```
 
-```{r}
 
-```
 
