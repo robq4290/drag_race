@@ -11,6 +11,8 @@ library(dragracer)
 library(glue)
 library(here)
 library(flexdashboard)
+library(esquisse)
+library(ggThemeAssist)
 source(here("Functions","db_helper_functions.R"))
 ```
 
