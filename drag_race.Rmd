@@ -11,6 +11,7 @@ library(dragracer)
 library(glue)
 library(here)
 library(flexdashboard)
+library(googlesheets4)
 source(here("Functions","db_helper_functions.R"))
 ```
 
@@ -32,6 +33,21 @@ rpdr_final_tbl <- db_exec_query(  db_conn = rpdr_conn
 
   DBI::dbWriteTable(conn=rpdr_conn, name="rpdr_hist", value=rpdr_final_tbl, append=TRUE, row.names=FALSE)
 DBI::dbDisconnect(rpdr_conn)
+```
+
+```{r Data for Progress has some cool data bringing it in from drive}
+# this is needed to read in the sheets
+googlesheets4::gs4_deauth()
+
+data_for_prog_url <- "https://docs.google.com/spreadsheets/d/1Sotvl3o7J_ckKUg5sRiZTqNQn3hPqhepBSeOpMTK15Q/"
+
+data_for_prog_episodes <- read_sheet(data_for_prog_url, sheet="all_episodes")
+
+data_for_prog_contest <- read_sheet(data_for_prog_url, sheet="all_contestants")
+
+data_for_prog_social <- read_sheet(data_for_prog_url, sheet="all_social_media")
+
+data_for_prog_all_rankings <- read_sheet(data_for_prog_url, sheet="all_rankings")
 ```
 
 
