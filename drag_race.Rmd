@@ -50,5 +50,14 @@ data_for_prog_social <- read_sheet(data_for_prog_url, sheet="all_social_media")
 data_for_prog_all_rankings <- read_sheet(data_for_prog_url, sheet="all_rankings")
 ```
 
+```{r save results from Data for Progress should loop but this is quicker, echo=FALSE, include=FALSE}
+saveRDS(data_for_prog_url, file=here("Input","all_episodes.RDS"))
+
+saveRDS(data_for_prog_contest, file=here("Input","all_contestants.RDS"))
+
+saveRDS(data_for_prog_social, file=here("Input","all_social_media.RDS"))
+
+saveRDS(data_for_prog_all_rankings, file=here("Input","all_rankings.RDS"))
+```
 
 
