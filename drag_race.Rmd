@@ -15,69 +15,46 @@ library(googlesheets4)
 source(here("Functions","db_helper_functions.R"))
 ```
 
+# Data Sources
 
-```{r manuall set the date columns to characters}
-# This is way different from the flavors of SQL I am used to... this is not my
-# ideal route but it gets the job done. Could potentially create lookup tables
-# with all of the dates based off of season/episode and dob but it seems a bit much
-# Will have to update the table definitions so that there is some documentation
-# noting the workaround that is taken in R.... alternatively I could just delete all of the tables
-# and rewrite them with the as.character mutate. Analysis first, make pretty later
-rpdr_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
-rpdr_final_tbl <- db_exec_query(  db_conn = rpdr_conn
-                        , file_location = "SQL"
-                        , file_name = "rpdr_final_table_defn.sql") %>% 
-  mutate(  airdate=as.character(lubridate::as_date(airdate))
-         , dob=as.character(lubridate::as_date(dob)))
+### dragraceR
 
+-   This is a cool library a friend of mine Jessica ([github](https://github.com/jalavery), [twitter](https://twitter.com/jessicalavs)) came across, containing three data sets:
 
-  DBI::dbWriteTable(conn=rpdr_conn, name="rpdr_hist", value=rpdr_final_tbl, append=TRUE, row.names=FALSE)
-DBI::dbDisconnect(rpdr_conn)
-```
+    1.  rpdr_contep: Contestant performance at the Episode level
 
+    2.   rpdr_ep: Episode level
 
-```{r}
-library(googlesheets4)
-googlesheets4::gs4_deauth()
-data_for_prog_url <- "https://docs.google.com/spreadsheets/d/1Sotvl3o7J_ckKUg5sRiZTqNQn3hPqhepBSeOpMTK15Q/"
-all_social_media <- read_sheet(data_for_prog_url, sheet="all_social_media", skip = 1, col_names = TRUE, col_types = "cDdd")
-```
+    3.  rpdr_contestants: Contestant level
 
-```{r}
-all_social_media <- all_social_media %>% 
-  rename(  contestant_id=1
-         , date_pulled=2
-         , twitter_followers=3
-         , instagram_followers=4
-         )
-```
-```{r}
-saveRDS(all_social_media,here("Input","all_social_media.RDS"))
-saveRDS(data_for_prog_episodes,here("Input","all_episodes.RDS"))
-```
+### [Data for Progress](https://www.dataforprogress.org/) 
 
+-   A Progressive policy and polling organization. They ran a contest that challenged teams to build a model to accurately predict the winner and loser of each episode. This is outside the scope of my project.
 
-```{r Read in RDS from input and ETL for sqlite}
-file_list <- list.files(("Input"))
+-   They gathered [data](https://docs.google.com/spreadsheets/d/1Sotvl3o7J_ckKUg5sRiZTqNQn3hPqhepBSeOpMTK15Q/edit#gid=228427306) through season 10 and made it publicly available:
 
-for (data_set in file_list){
-  df_name <- str_remove(data_set,".RDS")
-  assign(df_name, value = readRDS(file = here("Input",data_set)), envir = .GlobalEnv)
-  #readRDS(here("Input",data_set))
-}
+    1.  all_episodes: Episode Level
 
-```
+    2.  all_contestants: Contestant Level
 
+    3.  all_rankings: Ranking of each contestant in each episode
 
-```{r test join betweeen drag racer and Data for Prog}
-rpdr_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
+    4.  all_social_media: Scrape of contestants social media follower counts (not complete)
 
-DBI::dbWriteTable(conn=rpdr_conn, name="dp_contestants", value=all_contestants, append=TRUE, row.names=FALSE)
+# Motivation
 
-DBI::dbWriteTable(conn=rpdr_conn, name="dp_ranking", value=all_rankings, append=TRUE, row.names=FALSE)
+-   The data sources above complement each other. I will use them to demonstrate my ETL skills.
 
-DBI::dbWriteTable(conn=rpdr_conn, name="dp_social", value=all_social_media, append=TRUE, row.names=FALSE)
+-   By the letter:
 
-DBI::dbDisconnect(rpdr_conn)
-```
+    -   **E :** Extract data from a library (not difficult) and googleSheets
 
+    -   **T :** Transform during the extraction and follow a data model that allows for joining
+
+    -   **L :** Load the final dataframes into and RSQLite database
+
+-   I have significant experience in database management and will be creating an RSQLite database that will be stored in this repository. I chose this route over using AWS because this project will be converted into a library.
+
+    -   If this weren't open source I would write all data into S3 and load into Redshift database
+
+![](https://64.media.tumblr.com/d016d4a5a6ca854cc186bcc1fe70c0e9/db754f152e7389c3-9b/s500x750/f7dbb99134b1dfa6e475c290dcb61202e1b4c5f1.gifv)
