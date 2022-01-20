@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Data can be a Drag!"
 output: html_document
 ---
 
@@ -23,11 +23,11 @@ source(here("Functions","db_helper_functions.R"))
 
     1.  rpdr_contep: Contestant performance at the Episode level
 
-    2.   rpdr_ep: Episode level
+    2.  rpdr_ep: Episode level
 
     3.  rpdr_contestants: Contestant level
 
-### [Data for Progress](https://www.dataforprogress.org/) 
+### [Data for Progress](https://www.dataforprogress.org/)
 
 -   A Progressive policy and polling organization. They ran a contest that challenged teams to build a model to accurately predict the winner and loser of each episode. This is outside the scope of my project.
 
@@ -57,4 +57,28 @@ source(here("Functions","db_helper_functions.R"))
 
     -   If this weren't open source I would write all data into S3 and load into Redshift database
 
+# Goals for next iteration
+
+-   Scrape the[DragRace WiKi](https://rupaulsdragrace.fandom.com/wiki/RuPaul%27s_Drag_Race_Wiki) for drag families, exit quotes and other
+
 ![](https://64.media.tumblr.com/d016d4a5a6ca854cc186bcc1fe70c0e9/db754f152e7389c3-9b/s500x750/f7dbb99134b1dfa6e475c290dcb61202e1b4c5f1.gifv)
+
+### DragRacer Cleaning
+
+-   RSQLite is a little funky when it comes to dates, for some reason they need to be stored as characters. Will be using as.character and as_date to transform all date columns
+
+```{r load data from dragracer and transform columns, echo=FALSE, include=FALSE}
+drag_racer_contestants <- rpdr_contestants %>% 
+  mutate_at(c("dob"),as.character)
+
+drag_racer_episodes <- rpdr_ep%>% 
+  mutate_at(c("airdate"),as.character)
+
+drag_racer_combined <- rpdr_contep
+```
+
+### Data For Progress Scrape and Clean, Queen
+
+```{r}
+
+```
