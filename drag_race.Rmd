@@ -79,6 +79,44 @@ drag_racer_combined <- rpdr_contep
 
 ### Data For Progress Scrape and Clean, Queen
 
-```{r}
+-   Using the googledrive4 library to pull in the data
+
+-   **VERY IMPORTANT:** This data is coming from an open source Google sheet, users need to turn Google authentication off. 
+
+-   I needed to clean up some of the column types so they were compatible with r data types.
+
+    -   all_social_media's first observation went against the data types of the rest of the rows... embarrassed how long it took me to figure this bug out. PUT A SHADY SOMETHING HERE.
+
+-   Check out the [Column Specification](https://googlesheets4.tidyverse.org/reference/range_read.html) section. We don't transform columns like we would reader, a single string for all columns is required... which is annoying but I'll give them a pass because of how easy they've made it!
+
+-   For good measure, I am going to trim leading and trailing white space with the trim_ws argument... werk smarter, harder!
+
+```{r Scrape data from Google sheets and rename columns, echo=FALSE, include=FALSE}
+googlesheets4::gs4_deauth() 
+data_for_prog_url <- "https://docs.google.com/spreadsheets/d/1Sotvl3o7J_ckKUg5sRiZTqNQn3hPqhepBSeOpMTK15Q/"
+
+# RSLite() is weird with dates and we need to store them as characters. Will use a simple mutate
+
+all_episodes <-  read_sheet(data_for_prog_url, sheet="all_rankings", col_names=TRUE
+                            , col_types='ccDccc', trim_ws=TRUE) %>% 
+  mutate_at(c("episode_airdate"), as.character)
+
+all_contestants <-read_sheet(data_for_prog_url, sheet="all_contestants", col_names=TRUE
+                             , col_types='cccciccicc',  trim_ws=TRUE)
+
+all_rankings <- read_sheet(data_for_prog_url, sheet="all_contestants", col_names=TRUE
+                           , col_types='cccc', trim_ws=TRUE)
+
+# Skipping the headers, it is easier to ordinally rename
+# applying the same mutate for the date column
+all_social_media <- read_sheet(data_for_prog_url, sheet="all_social_media", col_names=FALSE
+                               , col_types='cDii',trim_ws=TRUE, skip=1)%>% 
+  rename(  contestant_id=1
+         , date_pulled=2
+         , twitter_followers=3
+         , instagram_followers=4
+         )%>% 
+  mutate_at(c("date_pulled"), as.character)
+                              
 
 ```
