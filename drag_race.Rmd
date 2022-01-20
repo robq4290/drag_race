@@ -110,7 +110,7 @@ all_rankings <- read_sheet(data_for_prog_url, sheet="all_rankings", col_names=TR
 # Skipping the headers, it is easier to ordinally rename
 # applying the same mutate for the date column
 all_social_media <- read_sheet(data_for_prog_url, sheet="all_social_media", col_names=FALSE
-                               , col_types='cDii',trim_ws=TRUE, skip=1)%>% 
+                               , col_types='cDii',trim_ws=TRUE, skip=2)%>% 
   rename(  contestant_id=1
          , date_pulled=2
          , twitter_followers=3
