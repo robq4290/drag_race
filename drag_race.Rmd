@@ -35,29 +35,49 @@ rpdr_final_tbl <- db_exec_query(  db_conn = rpdr_conn
 DBI::dbDisconnect(rpdr_conn)
 ```
 
-```{r Data for Progress has some cool data bringing it in from drive}
-# this is needed to read in the sheets
+
+```{r}
+library(googlesheets4)
 googlesheets4::gs4_deauth()
-
 data_for_prog_url <- "https://docs.google.com/spreadsheets/d/1Sotvl3o7J_ckKUg5sRiZTqNQn3hPqhepBSeOpMTK15Q/"
-
-data_for_prog_episodes <- read_sheet(data_for_prog_url, sheet="all_episodes")
-
-data_for_prog_contest <- read_sheet(data_for_prog_url, sheet="all_contestants")
-
-data_for_prog_social <- read_sheet(data_for_prog_url, sheet="all_social_media")
-
-data_for_prog_all_rankings <- read_sheet(data_for_prog_url, sheet="all_rankings")
+all_social_media <- read_sheet(data_for_prog_url, sheet="all_social_media", skip = 1, col_names = TRUE, col_types = "cDdd")
 ```
 
-```{r save results from Data for Progress should loop but this is quicker, echo=FALSE, include=FALSE}
-saveRDS(data_for_prog_url, file=here("Input","all_episodes.RDS"))
-
-saveRDS(data_for_prog_contest, file=here("Input","all_contestants.RDS"))
-
-saveRDS(data_for_prog_social, file=here("Input","all_social_media.RDS"))
-
-saveRDS(data_for_prog_all_rankings, file=here("Input","all_rankings.RDS"))
+```{r}
+all_social_media <- all_social_media %>% 
+  rename(  contestant_id=1
+         , date_pulled=2
+         , twitter_followers=3
+         , instagram_followers=4
+         )
+```
+```{r}
+saveRDS(all_social_media,here("Input","all_social_media.RDS"))
+saveRDS(data_for_prog_episodes,here("Input","all_episodes.RDS"))
 ```
 
+
+```{r Read in RDS from input and ETL for sqlite}
+file_list <- list.files(("Input"))
+
+for (data_set in file_list){
+  df_name <- str_remove(data_set,".RDS")
+  assign(df_name, value = readRDS(file = here("Input",data_set)), envir = .GlobalEnv)
+  #readRDS(here("Input",data_set))
+}
+
+```
+
+
+```{r test join betweeen drag racer and Data for Prog}
+rpdr_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
+
+DBI::dbWriteTable(conn=rpdr_conn, name="dp_contestants", value=all_contestants, append=TRUE, row.names=FALSE)
+
+DBI::dbWriteTable(conn=rpdr_conn, name="dp_ranking", value=all_rankings, append=TRUE, row.names=FALSE)
+
+DBI::dbWriteTable(conn=rpdr_conn, name="dp_social", value=all_social_media, append=TRUE, row.names=FALSE)
+
+DBI::dbDisconnect(rpdr_conn)
+```
 
