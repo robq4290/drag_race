@@ -97,14 +97,14 @@ data_for_prog_url <- "https://docs.google.com/spreadsheets/d/1Sotvl3o7J_ckKUg5sR
 
 # RSLite() is weird with dates and we need to store them as characters. Will use a simple mutate
 
-all_episodes <-  read_sheet(data_for_prog_url, sheet="all_rankings", col_names=TRUE
+all_episodes <-  read_sheet(data_for_prog_url, sheet="all_episodes", col_names=TRUE
                             , col_types='ccDccc', trim_ws=TRUE) %>% 
   mutate_at(c("episode_airdate"), as.character)
 
 all_contestants <-read_sheet(data_for_prog_url, sheet="all_contestants", col_names=TRUE
                              , col_types='cccciccicc',  trim_ws=TRUE)
 
-all_rankings <- read_sheet(data_for_prog_url, sheet="all_contestants", col_names=TRUE
+all_rankings <- read_sheet(data_for_prog_url, sheet="all_rankings", col_names=TRUE
                            , col_types='cccc', trim_ws=TRUE)
 
 # Skipping the headers, it is easier to ordinally rename
