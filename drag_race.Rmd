@@ -102,18 +102,22 @@ frame_list <- c("all_episodes", "all_contestants", "all_rankings", "all_social_m
 
 # can probably replace this with miceadds::load.files()
 for(df in frame_list){
+ 
+  rds_name <- glue("{df}.RDS")
+  file_loc <- here("Input",rds_name)
   
-  frame_name <- glue("{df}.RDS")
-  
-  file_loc <- here("Input",frame_name)
   if(file.exists(file_loc)){
-    assign("frame_name",readRDS(file_loc))
+    assign(df,readRDS(file_loc))
   }else{
     print(glue("{file_loc} does not exist"))
-    
+    final_logic <- F
   }
   
 }
+if(!final_logic){
+  get_dfp_frames(frame_list=frame_list, save_path=here("Input_Copy"))
+}
+
 
 
 
