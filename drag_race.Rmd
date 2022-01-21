@@ -12,7 +12,11 @@ library(glue)
 library(here)
 library(flexdashboard)
 library(googlesheets4)
-source(here("Functions","db_helper_functions.R"))
+library(miceadds)
+
+#source(here("Functions","db_helper_functions.R"))
+# Default file type is .R  if different need to sepcify
+source.all(here("Functions"))
 ```
 
 # Data Sources
@@ -96,7 +100,7 @@ drag_racer_combined <- rpdr_contep
 ```{r Read Flat files or scrape from google, echo=FALSE, include=FALSE}
 frame_list <- c("all_episodes", "all_contestants", "all_rankings", "all_social_media")
 
-
+# can probably replace this with miceadds::load.files()
 for(df in frame_list){
   
   frame_name <- glue("{df}.RDS")
