@@ -91,6 +91,8 @@ drag_racer_combined <- rpdr_contep
 
 -   For good measure, I am going to trim leading and trailing white space with the trim_ws argument... werk smarter, harder!
 
+-   This can be computationally expensive, I am going to save the data frames and then turn this chunk into a function- don't want this chunk unnecessarily running.
+
 ```{r Scrape data from Google sheets and rename columns, echo=FALSE, include=FALSE}
 googlesheets4::gs4_deauth() 
 data_for_prog_url <- "https://docs.google.com/spreadsheets/d/1Sotvl3o7J_ckKUg5sRiZTqNQn3hPqhepBSeOpMTK15Q/"
@@ -117,6 +119,16 @@ all_social_media <- read_sheet(data_for_prog_url, sheet="all_social_media", col_
          , instagram_followers=4
          )%>% 
   mutate_at(c("date_pulled"), as.character)
-                              
+
+frame_list <- c("all_episodes", "all_contestants", "all_rankings", "all_social_media")
+
+for(df in frame_list){
+ # gets the df in the frame list from the enviornment 
+  df_to_save <- get(df)
+  file_name <- glue("{df}.RDS")
+  print(file_name)
+   saveRDS(df_to_save, file=here("Input",file_name))
+   rm(df_to_save)
+}
 
 ```
