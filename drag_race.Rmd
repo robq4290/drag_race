@@ -108,6 +108,7 @@ for(df in frame_list){
   
   if(file.exists(file_loc)){
     assign(df,readRDS(file_loc))
+    final_logic <- T
   }else{
     print(glue("{file_loc} does not exist"))
     final_logic <- F
@@ -115,10 +116,6 @@ for(df in frame_list){
   
 }
 if(!final_logic){
-  get_dfp_frames(frame_list=frame_list, save_path=here("Input_Copy"))
+  get_dfp_frames(frame_list=frame_list, save_path=here("Input"))
 }
-
-
-
-
 ```
