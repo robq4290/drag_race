@@ -14,7 +14,8 @@ library(flexdashboard)
 library(googlesheets4)
 library(miceadds)
 library(rvest)
-library(dm) 
+library(dm)
+library(stringr)
 #source(here("Functions","db_helper_functions.R"))
 # Default file type is .R  if different need to sepcify
 source.all(here("Functions"))
@@ -148,26 +149,31 @@ DBI::dbWriteTable(conn=rpdr_conn, name="drag_family", value=drag_family_data, ap
 DBI::dbDisconnect(rpdr_conn)
 ```
 
-
-```{r start building the data model,echo=TRUE, include=TRUE}
-rpdr_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
-
-rpdr_db_map <- dm::dm_from_src(rpdr_conn)
-
-#DBI::dbDisconnect(rpdr_conn)
-
-names(rpdr_db_map)
+# Key Column Transformations
+```{r changing column types and names for clarity, echo=FALSE, include=FALSE }
+cntstnts <- drag_racer_contestants %>% 
+  mutate(   season=stringr::str_remove(season,"S")
+           ,season=stringr::str_remove(season,"^0") # need to clean this regex up
+         ) %>% 
+  separate(hometown,c("City","State"),",")
 ```
 
-```{r initial attempt at data model viz}
-rpdr_db_map %>% 
-  dm_add_pk(cntstnt, season) %>% 
-  dm_set_colors(green=c(cntstnt)) %>% 
-  dm_draw()
 
+### Data Model after everything is transformed
+
+Ideally, I would be able to use primary and foreign keys in a database... but I 
+don't have one set up (that is for the next iteration) and the RSQLite() in memory
+doesn't seem to remember the pks I assigned. 
+[Data Model Reference](https://cynkra.github.io/dm/articles/howto-dm-df.html)
+
+```{r create a data model from frames, echo=FALSE, include=FALSE}
+data_model_no_keys <- dm::dm(all_contestants, all_episodes, all_rankings, all_social_media, drag_racer_combined, drag_racer_contestants, drag_racer_episodes, drag_family_data)
 ```
 
 ```{r}
-rpdr_db_map
+# library(ReDaMoR)
+
 ```
+
+
 
