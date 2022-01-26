@@ -1,4 +1,4 @@
-get_drag_family_data <- function(wiki_root_url){
+get_drag_family_data <- function(wiki_root_url="https://rupaulsdragrace.fandom.com/wiki/"){
   
   drag_house_url <- glue("{wiki_root_url}Category:Queens_by_Drag_House")
   

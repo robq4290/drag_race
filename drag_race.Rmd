@@ -5,7 +5,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
+library(tidyverse) 
 library(DBI)
 library(dragracer)
 library(glue)
@@ -13,7 +13,7 @@ library(here)
 library(flexdashboard)
 library(googlesheets4)
 library(miceadds)
-
+library(rvest)
 #source(here("Functions","db_helper_functions.R"))
 # Default file type is .R  if different need to sepcify
 source.all(here("Functions"))
@@ -118,4 +118,18 @@ for(df in frame_list){
 if(!final_logic){
   get_dfp_frames(frame_list=frame_list, save_path=here("Input"))
 }
+```
+
+```{r scrape drag race wiki, echo=FALSE, include=FALSE }
+
+drag_wiki_data <- get_drag_family_data()
+```
+
+```{r get the elements from the data scraping list and save, echo=FALSE, include=FALSE}
+
+drag_family_data <- drag_wiki_data$drag_family_connections
+
+drag_family_scrape <- drag_wiki_data$drag_house_frame
+
+rm(drag_wiki_data)
 ```
