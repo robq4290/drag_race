@@ -170,10 +170,4 @@ doesn't seem to remember the pks I assigned.
 data_model_no_keys <- dm::dm(all_contestants, all_episodes, all_rankings, all_social_media, drag_racer_combined, drag_racer_contestants, drag_racer_episodes, drag_family_data)
 ```
 
-```{r}
-# library(ReDaMoR)
-
-```
-
-
 
