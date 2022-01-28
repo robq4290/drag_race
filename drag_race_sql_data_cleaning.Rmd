@@ -34,7 +34,7 @@ WHERE lower(contestant) like 'dida%'
 select 
   *
 FROM dp_contestants
-WHERE lower(contestant) like 'dida%' 
+WHERE lower(contestant) like 'vic%' 
 
 ```
 
