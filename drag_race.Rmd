@@ -262,3 +262,29 @@ contestant_id is one of the primary keys used to join
 
 ```
 
+```{r tibble to get the contestant tables in sync, echo=FALSE, include=FALSE}
+name_change <- tibble::tribble(~table, ~new_val, ~old_val
+                , 'dp_contestants', "A'Keria C. Davenport" , "A'keria Chanel Davenport"
+                , 'dp_contestants', "Dida Ritz" , "DiDa Ritz"
+                , 'dp_contestants', "Eureka O'Hara" , "Eureka"
+                , 'dp_contestants', "Ra'Jah O'Hara" ,"Ra'jah D. O'Hara"
+                , 'dp_contestants', "Serena Cha Cha","Serena ChaCha"
+                , 'dp_contestants', "Victoria (Porkchop) Parker", "Victoria Porkchop Parker"
+                                      )
+```
+
+
+```{r}
+for(i in 1:nrow(name_change)){
+  
+
+  db_update_column(dev_conn
+                   , tbl_name=name_change$table[i]
+                   , column_name="contestant"
+                   , column_value=name_change$new_val[i]
+                   , condition= name_change$old_val[i]
+                   )
+}
+DBI::dbDisconnect(dev_conn)
+```
+

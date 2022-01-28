@@ -73,17 +73,17 @@ data_progress_top AS
 ),
 union_table AS 
 (
-  SELECT 'Missing in Data Progress' AS except_condition, season, contestant FROM drag_racer_top
+  SELECT 'dp_contestants' AS update_table, season, contestant FROM drag_racer_top
   
     UNION ALL 
   
-  SELECT 'Missing in DragRaceR' AS except_condition, season, contestant FROM data_progress_top 
+  SELECT 'rpdr_contestants' AS update_table, season, contestant FROM data_progress_top 
 
 )
 
 SELECT 
   * 
 FROM union_table
-ORDER BY contestant
+ORDER BY contestant, update_table
 
 ```

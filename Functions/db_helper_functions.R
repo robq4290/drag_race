@@ -102,15 +102,18 @@ db_update_column <- function(db_conn, tbl_name, column_name, column_value, condi
   column_value_sql <- DBI::dbQuoteLiteral(conn=db_conn,column_value)
   condition_quote <- DBI::dbQuoteLiteral(conn=db_conn, condition)
   
-  update_statement <- glue::glue_sql("UPDATE {tbl_name} SET {column_name} = {column_value} WHERE {column_name}= {condition_quote}", .con=db_conn)
+  update_statement <- glue::glue_sql("UPDATE {tbl_name_sql} SET {column_name_sql} = {column_value_sql} WHERE {column_name_sql}= {condition_quote}", .con=db_conn)
   
   rows_out <- DBI::dbExecute(conn=db_conn, update_statement)
+  print(update_statement)
   
   if(rows_out==0){
-    glue("Zero rows returned. {tbl_name} not updated. 
+    
+    print(glue("Zero rows returned. {tbl_name} not updated. 
          Check the supplied condition {condition_quote}")
+         )
   }else{
-    glue("There were {rows_out} rows in {tbl_name} updated from {condition} to {column_value}.")
+    print(glue("There were {rows_out} rows in {tbl_name} updated from {condition} to {column_value}."))
   }
   
   
