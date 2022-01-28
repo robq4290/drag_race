@@ -148,7 +148,7 @@ if(!final_logic){
 rpdr_contestants <- dragracer::rpdr_contestants %>% 
   mutate_at(c("dob"),as.character)
 
-rpdr_ep <- dragracer::rpdr_ep%>% 
+rpdr_episodes <- dragracer::rpdr_ep%>% 
   mutate_at(c("airdate"),as.character) %>% 
   filter(special==0)
 
@@ -169,10 +169,10 @@ rpdr_contestants<- rpdr_contestants%>%
   mutate(   season=stringr::str_remove(season,"S")
            ,season=stringr::str_remove(season,"^0") # need to clean this regex up
          ) %>% 
-  separate(hometown,c("City","State"),",") 
+  separate(hometown,c("city","state"),",") 
 
 
-rpdr_ep <- rpdr_ep %>% 
+rpdr_episodes <- rpdr_episodes %>% 
   mutate(    season=stringr::str_remove(season,"S")
            , season=stringr::str_remove(season,"^0") # need to clean this regex up
            , episode=as.character(episode) 
@@ -182,32 +182,83 @@ rpdr_combined <- rpdr_combined %>%
   mutate(    season=stringr::str_remove(season,"S")
            , season=stringr::str_remove(season,"^0") # need to clean this regex up
            , episode=as.character(episode) 
-         )  
+         ) %>% 
+  rename("runway_position"=outcome)
 ```
 
-# Writing tables to a sqlite database for data checks 
+```{r data for progess forgot to change some column names}
 
-Will only be keeping non-redundant data
-```{r create sqlitedb and frames, echo=FALSE, include=FALSE}
+all_contestants <- all_contestants %>% 
+  rename(  "season"=season_number
+         , "contestant"=contestant_name
+         , "entrance"=contestant_entrance
+         , "place"=season_outcome
+         , "instagram"=handle_instagram
+         , "twitter"=handle_twitter
+         , "city"=hometown_city
+         , "state"=hometown_state
+  )
 
-db_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname = "drag_race_dev.sqlite")
+all_episodes <- all_episodes %>% 
+  rename(  "season"=season_number
+         , "episode"=episode_number
+         , "airdate"=episode_airdate
+         , "title"=episode_title
+         , "challenge_desc"=episode_maxi_challenge_type
+         )
 
-db_write_table(db_conn = db_conn, tbl_name="dp_contestants", df_in=all_contestants)
+all_rankings <- all_rankings %>% 
+  rename(  "season"=season_number
+         , "episode"=episode_number
+         , "runway_position"=episode_placement
 
-db_write_table(db_conn = db_conn, tbl_name="dp_episodes", df_in=all_episodes)
-
-db_write_table(db_conn = db_conn, tbl_name="dp_ranking", df_in=all_rankings)
-
-db_write_table(db_conn = db_conn, tbl_name="dp_social_media", df_in=all_social_media)
-
-db_write_table(db_conn = db_conn, tbl_name="rpdr_episodes", df_in=rpdr_ep)
-
-db_write_table(db_conn = db_conn, tbl_name="rpdr_contestants", df_in=rpdr_contestants)
-
-db_write_table(db_conn = db_conn, tbl_name="rpdr_contestant_season", df_in=rpdr_combined)
-
-dbDisconnect(db_conn)
+  )
 
 ```
 
+```{r write tables to development database, echo=FALSE, include=FALSE}
+
+  db_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname = "drag_race_dev.sqlite")
+  
+  db_write_table(db_conn = db_conn, tbl_name="dp_contestants", df_in=all_contestants)
+  
+  db_write_table(db_conn = db_conn, tbl_name="dp_episodes", df_in=all_episodes)
+  
+  db_write_table(db_conn = db_conn, tbl_name="dp_ranking", df_in=all_rankings)
+  
+  db_write_table(db_conn = db_conn, tbl_name="dp_social_media", df_in=all_social_media)
+  
+  db_write_table(db_conn = db_conn, tbl_name="rpdr_episodes", df_in=rpdr_episodes)
+  
+  db_write_table(db_conn = db_conn, tbl_name="rpdr_contestants", df_in=rpdr_contestants)
+  
+  db_write_table(db_conn = db_conn, tbl_name="rpdr_contestant_season", df_in=rpdr_combined)
+  
+  dbDisconnect(db_conn)
+  
+```
+
+# SQL Table Updates
+
+  Put a link to the drag_race_sql_data_cleaning render 
+  
+  using that as a proxy SQL IDE 
+```{r define sql connection, echo=FALSE, include=FALSE}
+dev_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname = "drag_race_dev.sqlite")
+```
+
+The only Data for Progress table that needs to be updated is contestants 
+contestant_id is one of the primary keys used to join 
+```{r update name columns to match}
+# Used Shangela as a working example. Going to create a tibble and loop through 
+# db_update_column(dev_conn
+#                  , tbl_name="dp_contestants"
+#                  , column_name="contestant"
+#                  , column_value="Shangela"
+#                  , condition= "Shangela Laquifa Wadley"
+#                  )
+#################
+
+
+```
 

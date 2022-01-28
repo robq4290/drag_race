@@ -93,6 +93,29 @@ db_write_table <- function(db_conn, tbl_name, df_in){
   
 }
 
+db_update_column <- function(db_conn, tbl_name, column_name, column_value, condition){
+  
+  # using the DBI quoting functions to safely pass in the condition parameters
+  
+  tbl_name_sql <- DBI::SQL(tbl_name)
+  column_name_sql <- DBI::SQL(column_name)
+  column_value_sql <- DBI::dbQuoteLiteral(conn=db_conn,column_value)
+  condition_quote <- DBI::dbQuoteLiteral(conn=db_conn, condition)
+  
+  update_statement <- glue::glue_sql("UPDATE {tbl_name} SET {column_name} = {column_value} WHERE {column_name}= {condition_quote}", .con=db_conn)
+  
+  rows_out <- DBI::dbExecute(conn=db_conn, update_statement)
+  
+  if(rows_out==0){
+    glue("Zero rows returned. {tbl_name} not updated. 
+         Check the supplied condition {condition_quote}")
+  }else{
+    glue("There were {rows_out} rows in {tbl_name} updated from {condition} to {column_value}.")
+  }
+  
+  
+}
+
 db_write_all_tables <- function(){
   db_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname = "drag_race_dev.sqlite")
   
