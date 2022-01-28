@@ -87,3 +87,52 @@ FROM union_table
 ORDER BY contestant, update_table
 
 ```
+```{sql check for drag family now, connection="dev_conn"}
+-- Step one: Use except clause to see who is missing 
+-- I already kjnow that the rpdr_contestant has more data than dp_contestants 
+-- but for good measure want to make sure there aren't any misspellings 
+-- because contestant is going to be used as a join key 
+with drag_racer AS
+(
+  SELECT  contestant FROM rpdr_contestants WHERE season<12
+  
+),
+family AS
+(
+
+  SELECT  contestant FROM drag_family
+),
+drag_racer_top AS
+(
+
+  SELECT  contestant FROM drag_racer
+  
+    EXCEPT 
+  
+  SELECT contestant FROM family 
+),
+family_top AS 
+(
+  SELECT  contestant FROM drag_family
+  
+    EXCEPT 
+    
+  SELECT contestant FROM rpdr_contestants
+  
+),
+union_table AS 
+(
+  SELECT 'drag_family' AS update_table,  contestant FROM drag_racer_top
+  
+    UNION ALL 
+  
+  SELECT 'rpdr_contestants' AS update_table,  contestant FROM family_top 
+
+)
+
+SELECT 
+  * 
+FROM union_table
+ORDER BY contestant, update_table
+```
+

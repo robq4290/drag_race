@@ -136,6 +136,8 @@ db_write_all_tables <- function(){
   
   db_write_table(db_conn = db_conn, tbl_name="rpdr_contestant_season", df_in=rpdr_combined)
   
+  db_write_table(db_conn = db_conn, tbl_name="drag_family", df_in=drag_family_data)
+  
   dbDisconnect(db_conn)
   
 }
