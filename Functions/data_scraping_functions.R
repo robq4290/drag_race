@@ -28,7 +28,7 @@ get_drag_family_data <- function(wiki_root_url="https://rupaulsdragrace.fandom.c
                                     read_html()
                                 }
     )
-    , all_names=map( html_results
+    , contestant=map( html_results
                      , ~{.x %>% 
                          html_nodes(".category-page__member") %>% 
                          html_text() %>% 
@@ -37,7 +37,7 @@ get_drag_family_data <- function(wiki_root_url="https://rupaulsdragrace.fandom.c
     )
     ) %>% 
     select(-html_results) %>% 
-    unnest(all_names)  
+    unnest(contestant)  
   
   # Remove all scraping portions of the code and then create a cleaned up frame that 
   # can be used for creating a node graph
@@ -47,8 +47,8 @@ get_drag_family_data <- function(wiki_root_url="https://rupaulsdragrace.fandom.c
   # I will figure out better naming conventions when the frames are loaded into 
   # the in memory database
   drag_family_connections <- drag_house_frame %>% 
-    select(family_name, all_names) %>% 
-    group_by(all_names) %>% 
+    select(family_name, contestant) %>% 
+    group_by(contestant) %>% 
     mutate(  mutliple_families=n()
              , multiple_family_flg=case_when(mutliple_families>1~1,
                                              TRUE~0)

@@ -69,19 +69,6 @@ source.all(here("Functions"))
 
 ![](https://64.media.tumblr.com/d016d4a5a6ca854cc186bcc1fe70c0e9/db754f152e7389c3-9b/s500x750/f7dbb99134b1dfa6e475c290dcb61202e1b4c5f1.gifv)
 
-### DragRacer Cleaning
-
--   RSQLite is a little funky when it comes to dates, for some reason they need to be stored as characters. Will be using as.character and as_date to transform all date columns
-
-```{r load data from dragracer and transform columns, echo=FALSE, include=FALSE}
-drag_racer_contestants <- rpdr_contestants %>% 
-  mutate_at(c("dob"),as.character)
-
-drag_racer_episodes <- rpdr_ep%>% 
-  mutate_at(c("airdate"),as.character)
-
-drag_racer_combined <- rpdr_contep
-```
 
 ### Data For Progress Scrape and Clean, Queen
 
@@ -122,52 +109,105 @@ if(!final_logic){
 }
 ```
 
-```{r scrape drag race wiki, echo=FALSE, include=FALSE }
+```{r read flat files or scrape drag race wiki, echo=FALSE, include=FALSE }
+drag_family_loop<-c("drag_family_data.RDS", "drag_family_scrape.RDS")
 
-drag_wiki_data <- get_drag_family_data()
+for(df in drag_family_loop){
+    rds_name <- glue("{df}.RDS")
+    file_loc <- here("Input",rds_name)
+  
+    if(file.exists(file_loc)){
+      assign(df,readRDS(file_loc))
+      final_logic <- T
+    }else{
+    print(glue("{file_loc} does not exist"))
+    final_logic <- F
+  }
+  
+}
+if(!final_logic){
+  drag_wiki_data <- get_drag_family_data()
+  
+  drag_family_data <- drag_wiki_data$drag_family_connections
+  
+  drag_family_scrape <- drag_wiki_data$drag_house_frame
+  
+  saveRDS(drag_family_data, file=here::here("Input","drag_family_data.RDS"))
+  
+  saveRDS(drag_family_scrape, file=here::here("Input","drag_family_scrape.RDS"))
+  
+  rm(drag_wiki_data)
+}
 ```
 
-```{r get the elements from the data scraping list and save, echo=FALSE, include=FALSE}
+### DragRacer Cleaning
 
-drag_family_data <- drag_wiki_data$drag_family_connections
+-   RSQLite is a little funky when it comes to dates, for some reason they need to be stored as characters. Will be using as.character and as_date to transform all date columns
 
-drag_family_scrape <- drag_wiki_data$drag_house_frame
+```{r load data from dragracer and transform columns, echo=FALSE, include=FALSE}
+rpdr_contestants <- dragracer::rpdr_contestants %>% 
+  mutate_at(c("dob"),as.character)
 
-rm(drag_wiki_data)
+rpdr_ep <- dragracer::rpdr_ep%>% 
+  mutate_at(c("airdate"),as.character) %>% 
+  filter(special==0)
+
+rpdr_combined <- dragracer::rpdr_contep %>% 
+  filter(!is.na(eliminated))
 ```
 
-```{r write scrape tables to database, echo=FALSE, include=FLASE}
-# use this chunk to get the data model together with the dm libary
-
-rpdr_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
-
-#rpdr_table_map <- dm::dm_from_src(rpdr_conn)
-
-DBI::dbWriteTable(conn=rpdr_conn, name="drag_family_scrape", value=drag_family_scrape, append=TRUE, row.names=FALSE)
-DBI::dbWriteTable(conn=rpdr_conn, name="drag_family", value=drag_family_data, append=TRUE, row.names=FALSE)
-
-DBI::dbDisconnect(rpdr_conn)
-```
 
 # Key Column Transformations
-```{r changing column types and names for clarity, echo=FALSE, include=FALSE }
-cntstnts <- drag_racer_contestants %>% 
+
+## Changing column types and names for clarity
+
+### Drag Racer
+
+There are repeated transformations, will be turning into a function when I come back for code clean up/ final documentation 
+```{r drag racer cleaning, echo=FALSE, include=FALSE }
+rpdr_contestants<- rpdr_contestants%>% 
   mutate(   season=stringr::str_remove(season,"S")
            ,season=stringr::str_remove(season,"^0") # need to clean this regex up
          ) %>% 
-  separate(hometown,c("City","State"),",")
+  separate(hometown,c("City","State"),",") 
+
+
+rpdr_ep <- rpdr_ep %>% 
+  mutate(    season=stringr::str_remove(season,"S")
+           , season=stringr::str_remove(season,"^0") # need to clean this regex up
+           , episode=as.character(episode) 
+         )
+
+rpdr_combined <- rpdr_combined %>% 
+  mutate(    season=stringr::str_remove(season,"S")
+           , season=stringr::str_remove(season,"^0") # need to clean this regex up
+           , episode=as.character(episode) 
+         )  
 ```
 
+# Writing tables to a sqlite database for data checks 
 
-### Data Model after everything is transformed
+Will only be keeping non-redundant data
+```{r create sqlitedb and frames, echo=FALSE, include=FALSE}
 
-Ideally, I would be able to use primary and foreign keys in a database... but I 
-don't have one set up (that is for the next iteration) and the RSQLite() in memory
-doesn't seem to remember the pks I assigned. 
-[Data Model Reference](https://cynkra.github.io/dm/articles/howto-dm-df.html)
+db_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname = "drag_race_dev.sqlite")
 
-```{r create a data model from frames, echo=FALSE, include=FALSE}
-data_model_no_keys <- dm::dm(all_contestants, all_episodes, all_rankings, all_social_media, drag_racer_combined, drag_racer_contestants, drag_racer_episodes, drag_family_data)
+db_write_table(db_conn = db_conn, tbl_name="dp_contestants", df_in=all_contestants)
+
+db_write_table(db_conn = db_conn, tbl_name="dp_episodes", df_in=all_episodes)
+
+db_write_table(db_conn = db_conn, tbl_name="dp_ranking", df_in=all_rankings)
+
+db_write_table(db_conn = db_conn, tbl_name="dp_social_media", df_in=all_social_media)
+
+db_write_table(db_conn = db_conn, tbl_name="rpdr_episodes", df_in=rpdr_ep)
+
+db_write_table(db_conn = db_conn, tbl_name="rpdr_contestants", df_in=rpdr_contestants)
+
+db_write_table(db_conn = db_conn, tbl_name="rpdr_contestant_season", df_in=rpdr_combined)
+
+dbDisconnect(db_conn)
+
 ```
 
 

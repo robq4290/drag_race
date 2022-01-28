@@ -81,3 +81,35 @@ get_df_col_names_selectable <- function(df_in, alias){
   
   return(select_out)
 }
+
+db_write_table <- function(db_conn, tbl_name, df_in){
+  
+ # df_to_write <- sym(df_in)
+  
+  DBI::dbWriteTable(conn=db_conn
+                    , name=tbl_name
+                    , value= df_in#!!df_to_write
+                    )
+  
+}
+
+db_write_all_tables <- function(){
+  db_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname = "drag_race_dev.sqlite")
+  
+  db_write_table(db_conn = db_conn, tbl_name="dp_contestants", df_in=all_contestants)
+  
+  db_write_table(db_conn = db_conn, tbl_name="dp_episodes", df_in=all_episodes)
+  
+  db_write_table(db_conn = db_conn, tbl_name="dp_ranking", df_in=all_rankings)
+  
+  db_write_table(db_conn = db_conn, tbl_name="dp_social_media", df_in=all_social_media)
+  
+  db_write_table(db_conn = db_conn, tbl_name="rpdr_episodes", df_in=rpdr_ep)
+  
+  db_write_table(db_conn = db_conn, tbl_name="rpdr_contestants", df_in=rpdr_contestants)
+  
+  db_write_table(db_conn = db_conn, tbl_name="rpdr_contestant_season", df_in=rpdr_combined)
+  
+  dbDisconnect(db_conn)
+  
+}
