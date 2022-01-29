@@ -136,3 +136,202 @@ FROM union_table
 ORDER BY contestant, update_table
 ```
 
+```{sql query to create a new contestants table , connection="dev_conn", output.var="vw_contestants"}
+-- only keeping queens that have the same metrics across both data sets 
+SELECT 
+    dp.contestant_id 
+  , rpdr.contestant
+  , rpdr.dob AS birthday
+  , strftime('%Y',rpdr.dob) AS year_born
+  , dp.instagram
+  , dp.twitter
+  , rpdr.state AS home_state
+  , dp.city AS current_city
+  , dp.state AS current_state
+  , rpdr.city AS home_city 
+  , rpdr.season 
+  , dp.entrance 
+  , dp.place
+  , max(dp.place) OVER(PARTITION BY rpdr.season) as season_nbr_queeens
+FROM rpdr_contestants rpdr 
+
+INNER JOIN dp_contestants dp
+
+  ON rpdr.contestant = dp.contestant 
+  
+  and rpdr.season=dp.season
+```
+
+
+```{sql  , connection="dev_conn"}
+select * from rpdr_episodes limit 1
+```
+
+```{sql  , connection="dev_conn"}
+select * from dp_episodes limit 1 
+```
+
+```{sql query to create a new episodes table , connection="dev_conn", output.var="vw_episodes"}
+
+SELECT 
+    rpdr.season
+  , rpdr.episode
+  , rpdr.airdate
+  -- verified that the dates match, not needed in the final table
+  --, case when rpdr.airdate=dp.airdate then 1 else 0 end as date_check
+    -- titles were similar enough  keeping rpdr column 
+  --, case when dp.title=rpdr.nickname then 1 else 0 end as title_check
+  , rpdr.nickname as episode_title 
+  , dp.episode_type 
+  -- Will need to make a new table for minichallenge that can be joined with the dp_ranking table
+  , rpdr.minic as mini_challenge
+  , rpdr.minicw1 as mini_challenge_winner_1
+  , rpdr.minicw1 as mini_challenge_winner_2
+  , rpdr.minicw3 as mini_challenge_winner_3
+  -- going to use the dp_ranking table for top and bottom tracking
+  , dp.challenge_desc 
+  -- This column has a lot of NULLs. Need to find a new source will not
+  -- be able to extract much information from this
+  -- , rpdr.runwaytheme as runway_theme
+  , rpdr.lipsyncartist as lsfyl_artist 
+  , rpdr.lipsyncsong as lsfyl_song
+  , CASE 
+      WHEN (rpdr.eliminated1 IS NOT NULL) AND  (rpdr.eliminated2 IS NOT NULL) THEN 1
+      ELSE 0 
+    END AS flg_mltpl_elim
+  , CASE 
+      WHEN UPPER(rpdr.nickname) LIKE '%SNATCH%' THEN 1
+      ELSE 0 
+    END AS flg_snatch_game
+
+  
+FROM rpdr_episodes rpdr 
+
+INNER JOIN dp_episodes dp
+
+  ON  rpdr.season=dp.season
+  
+  and rpdr.episode=dp.episode
+```
+
+```{sql query to create a new minichallenge table , connection="dev_conn", output.var="vw_mini"}
+with base_table AS
+(
+  SELECT 
+      rpdr.season
+    , rpdr.episode
+    , rpdr.airdate
+    , rpdr.minic as mini_challenge
+    , rpdr.minicw1 as mini_challenge_winner_1
+    , rpdr.minicw1 as mini_challenge_winner_2
+    , rpdr.minicw3 as mini_challenge_winner_3
+  
+    
+  FROM rpdr_episodes rpdr 
+),
+union_table AS
+( -- Using UNION because the original columns have duplicates if there was only one winner 
+  SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_1 AS winner FROM base_table 
+  
+    WHERE mini_challenge_winner_1 is not null
+  
+    UNION
+
+  SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_2 AS winner FROM base_table 
+  
+    WHERE mini_challenge_winner_2 is not null
+  
+    UNION 
+    
+  SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_3 AS winner FROM base_table 
+  
+    WHERE mini_challenge_winner_3 is not null
+
+
+)
+
+SELECT  
+    season
+  , episode
+  , airdate
+  , mini_challenge
+  , winner
+  , count(winner)OVER(PARTITION BY season, episode) AS "nbr_winners"
+  , CASE 
+      WHEN "nbr_winners">1 THEN 1
+      ELSE 0 
+    END AS flg_mltpl_winners
+FROM union_table
+```
+
+```{sql query to create a new ranking table , connection="dev_conn"}
+select * from dp_ranking limit 1 
+```
+
+```{sql query to create a new ranking table , connection="dev_conn", output.var="vw_ranking"}
+with base_table AS
+(
+  SELECT 
+      rpdr.season
+    , rpdr.episode
+    , rpdr.airdate
+    , rpdr.minic as mini_challenge
+    , rpdr.minicw1 as mini_challenge_winner_1
+    , rpdr.minicw1 as mini_challenge_winner_2
+    , rpdr.minicw3 as mini_challenge_winner_3
+  
+    
+  FROM rpdr_episodes rpdr 
+),
+union_table AS
+( -- Using UNION because the original columns have duplicates if there was only one winner 
+  SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_1 AS winner FROM base_table 
+  
+    WHERE mini_challenge_winner_1 is not null
+  
+    UNION
+
+  SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_2 AS winner FROM base_table 
+  
+    WHERE mini_challenge_winner_2 is not null
+  
+    UNION 
+    
+  SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_3 AS winner FROM base_table 
+  
+    WHERE mini_challenge_winner_3 is not null
+
+
+)
+
+SELECT  
+    season
+  , episode
+  , airdate
+  , mini_challenge
+  , winner
+  , count(winner)OVER(PARTITION BY season, episode) AS "nbr_winners"
+  , CASE 
+      WHEN "nbr_winners">1 THEN 1
+      ELSE 0 
+    END AS flg_mltpl_winners
+FROM union_table
+```
+
+```{r write views to dev database, echo=FALSE, include=FALSE}
+view_path <- here::here("SQL","view_definitions")
+db_create_view(  db_conn=dev_conn
+               , sql_path=view_path
+               , sql_file = "vw_mini_challenge.sql" 
+               )
+
+```
+
+
+```{sql, connection="dev_conn"}
+select * from vw_episodes
+
+```
+
+
+

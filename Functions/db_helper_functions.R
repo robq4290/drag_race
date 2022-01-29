@@ -119,6 +119,24 @@ db_update_column <- function(db_conn, tbl_name, column_name, column_value, condi
   
 }
 
+db_create_view <- function(db_conn, sql_path, sql_file){
+  vw_def <- readr::read_file(file=glue("{sql_path}/{sql_file}"))
+  
+  sql_statement <- DBI::sqlInterpolate(  conn=db_conn, sql=vw_def)
+# need to make this a trycatch block
+  print(sql_statement)
+  
+  rows_out <- DBI::dbExecute(conn=db_conn, sql_statement)
+  
+  if(rows_out!=0){
+    print("Sucessful view update")
+  }else{
+    print("View not created, check definition and source tables")
+    print(sql_statement)
+  }
+  
+}
+
 db_write_all_tables <- function(){
   db_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname = "drag_race_dev.sqlite")
   

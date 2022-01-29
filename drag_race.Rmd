@@ -216,28 +216,6 @@ all_rankings <- all_rankings %>%
 
 ```
 
-```{r write tables to development database, echo=FALSE, include=FALSE}
-
-  db_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname = "drag_race_dev.sqlite")
-  
-  db_write_table(db_conn = db_conn, tbl_name="dp_contestants", df_in=all_contestants)
-  
-  db_write_table(db_conn = db_conn, tbl_name="dp_episodes", df_in=all_episodes)
-  
-  db_write_table(db_conn = db_conn, tbl_name="dp_ranking", df_in=all_rankings)
-  
-  db_write_table(db_conn = db_conn, tbl_name="dp_social_media", df_in=all_social_media)
-  
-  db_write_table(db_conn = db_conn, tbl_name="rpdr_episodes", df_in=rpdr_episodes)
-  
-  db_write_table(db_conn = db_conn, tbl_name="rpdr_contestants", df_in=rpdr_contestants)
-  
-  db_write_table(db_conn = db_conn, tbl_name="rpdr_contestant_season", df_in=rpdr_combined)
-  
-  dbDisconnect(db_conn)
-  
-```
-
 # SQL Table Updates
 
   Put a link to the drag_race_sql_data_cleaning render 
