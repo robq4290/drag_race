@@ -329,9 +329,115 @@ db_create_view(  db_conn=dev_conn
 
 
 ```{sql, connection="dev_conn"}
-select * from vw_episodes
+SELECT 
+  *
+FROM dp_ranking limit 1 
 
 ```
 
+```{sql, connection="dev_conn", output.var="vw_episodes"}
+SELECT 
+  *
+FROM vw_episodes 
+
+```
+
+```{sql, connection="dev_conn", output.var="df_help"}
+SELECT 
+  distinct runway_position
+FROM dp_ranking
+
+```
+```{sql, connection="dev_conn"}
+select * from vw_mini_challenge limit 1
+```
+
+```{sql, connection="dev_conn", output.var="vw_competition"}
+with base_table AS 
+(
+SELECT 
+    ranks.contestant_id
+  , ranks.season AS "season"
+  , ranks.episode AS "episode" 
+  , ep.episode_title
+  , ep.episode_type
+  , contest.contestant AS "contestant"
+  , mini.mini_challenge
+  , CASE 
+      WHEN mini.winner=contest.contestant THEN 1 
+      ELSE 0 
+    END AS "flg_mini_winner"
+  , ranks.runway_position AS "runway_position"
+  , CASE 
+      WHEN "flg_mini_winner"=1 AND "runway_position" in('Winner','WIN') THEN 1
+      ELSE 0 
+    END AS flg_mini_maxi_winner
+  , CASE 
+      WHEN "flg_mini_winner"=1 AND "runway_position" in('Eliminated','ELIM') THEN 1
+      ELSE 0 
+    END AS flg_mini_winner_eliminated
+  , CASE 
+      WHEN "flg_mini_winner"=1 AND "runway_position" in('SAFE','HIGH') THEN 1 
+      ELSE 0 
+    END AS flg_mini_winner_safe_high
+  , CASE 
+      WHEN "flg_mini_winner"=1 AND "runway_position" in('LOW','BTM2','BTM6') THEN 1 
+      ELSE 0 
+    END AS flg_mini_winner_low
+  , contest.entrance
+  , contest.place
+  , CASE 
+      WHEN "runway_position" in('LOW','BTM2','BTM6')  THEN 1 
+      ELSE 0 
+    END AS flg_low
+  , CASE 
+      WHEN "runway_position" ='SAFE'  THEN 1 
+      ELSE 0 
+    END AS flg_safe
+  , CASE 
+      WHEN "runway_position" in('BTM2','BTM6')  THEN 1 
+      ELSE 0 
+    END AS flg_bottom
+  , CASE 
+      WHEN "runway_position" in('Winner','WIN') THEN 1 
+      ELSE 0 
+    END as flg_winner
+
+FROM dp_ranking ranks
+
+LEFT JOIN vw_episodes ep 
+
+  ON ranks.season=ep.season
+  
+  AND ranks.episode=ep.episode
+  
+LEFT JOIN vw_mini_challenge mini 
+
+  ON ranks.season=mini.season
+  
+  AND ranks.episode=mini.episode 
+  
+LEFT JOIN vw_contestants contest
+
+  ON ranks.contestant_id=contest.contestant_id 
+  
+  AND ranks.season=contest.season
+  
+WHERE episode_type='Competition'
+  
+)
+
+select 
+
+    *
+    -- doing the running totals here because I dont like using alias.column in window functions
+    -- makes them look more cumbersome then they need to be 
+  , sum(flg_bottom) OVER(PARTITION BY season, contestant_id ORDER BY episode )  AS bottom_count 
+  , sum(flg_low) OVER(PARTITION BY season, contestant_id ORDER BY episode )  AS low_count
+  , sum(flg_winner) OVER(PARTITION BY season, contestant_id ORDER BY episode )  AS win_count
+  , sum(flg_mini_winner) OVER(PARTITION BY season, contestant_id ORDER BY episode ) AS mini_win_count
+  , sum(flg_safe) OVER(PARTITION BY season, contestant_id ORDER BY episode ) AS safe_count
+from base_table
+```
 
 
