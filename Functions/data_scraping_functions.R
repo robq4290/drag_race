@@ -28,7 +28,7 @@ get_drag_family_data <- function(wiki_root_url="https://rupaulsdragrace.fandom.c
                                     read_html()
                                 }
     )
-    , contestant=map( html_results
+    , contestant=map_chr( html_results
                      , ~{.x %>% 
                          html_nodes(".category-page__member") %>% 
                          html_text() %>% 

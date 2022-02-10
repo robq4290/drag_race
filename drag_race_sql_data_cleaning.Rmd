@@ -13,6 +13,7 @@ library(miceadds)
 library(rvest)
 library(dm)
 library(stringr)
+
 #source(here("Functions","db_helper_functions.R"))
 # Default file type is .R  if different need to sepcify
 source.all(here("Functions"))
@@ -20,7 +21,16 @@ source.all(here("Functions"))
 
 ```{r}
 dev_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname = "drag_race_dev.sqlite")
+
+DBI::dbListTables(dev_conn)
 ```
+
+```{r}
+db_write_table(db_conn=dev_conn
+               , tbl_name = "vw_ep_rtng"
+               , vw_ep_rating)
+```
+
 
 ```{sql name check rpdr, connection="dev_conn"}
 select 
@@ -438,6 +448,10 @@ select
   , sum(flg_mini_winner) OVER(PARTITION BY season, contestant_id ORDER BY episode ) AS mini_win_count
   , sum(flg_safe) OVER(PARTITION BY season, contestant_id ORDER BY episode ) AS safe_count
 from base_table
+```
+
+```{r}
+
 ```
 
 

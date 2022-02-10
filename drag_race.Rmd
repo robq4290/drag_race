@@ -266,3 +266,12 @@ for(i in 1:nrow(name_change)){
 DBI::dbDisconnect(dev_conn)
 ```
 
+
+```{r}
+get_seaon_episode_ratings()
+```
+
+```{r}
+dbListTables(dev_conn)
+```
+
