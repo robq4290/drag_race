@@ -1,5 +1,4 @@
 CREATE VIEW vw_mini_challenge AS
-
   with base_table AS
   (
     SELECT 
@@ -36,9 +35,9 @@ CREATE VIEW vw_mini_challenge AS
   )
   
   SELECT  
-      season
-    , episode
-    , airdate
+      season as season_number
+    , episode as episode_number
+    , airdate as air_date
     , mini_challenge
     , winner
     , count(winner)OVER(PARTITION BY season, episode) AS "nbr_winners"
