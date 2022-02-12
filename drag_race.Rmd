@@ -8,10 +8,12 @@ knitr::opts_chunk$set(echo = TRUE)
 options(scipen = 100)
 
 library(tidyverse) 
+library(broom)
 library(DBI)
 library(glue)
 library(here)
 library(flexdashboard)
+library(data.table)
 # Interactive way to plot things
 library(esquisse)
 library(ggThemeAssist)
@@ -19,9 +21,10 @@ library(miceadds)
 library(rvest)
 library(stringr)
 library(plotly)
-#source(here("Functions","db_helper_functions.R"))
+library(stats)
+source(here("Functions","db_helper_functions.R"))
 # Default file type is .R  if different need to sepcify
-source.all(here("Functions"))
+#source.all(here("Functions"))
 ```
 
 ```{r open the connection to dev db and get list of avail objects, echo=FALSE}
@@ -50,7 +53,8 @@ vw_episode_season_ratings <- db_exec_param_query( db_conn=drag_conn
                                       , object_name="vw_episode_season_ratings") %>% 
   mutate_at( "season_number"
             , list(~factor(.,levels=c("1","2","3","4","5","6","7","8","9","10","11","12","13","14")))
-             )
+             ) %>% 
+  filter(!is.na(viewer_count))
 
 vw_episodes <- db_exec_param_query( db_conn=drag_conn
                                       , file_location = "SQL" 
@@ -60,15 +64,13 @@ vw_episodes <- db_exec_param_query( db_conn=drag_conn
 DBI::dbDisconnect(drag_conn)
 ```
 
-```{r Initialize esquisse to get a look at rating data, warning=FALSE}
-esquisse::esquisser(vw_episode_season_ratings)
-
+```{r Initialize esquisse to get a look at rating data, echo=FALSE}
+esquisse::esquisser()
 ```
 
 ```{r Boxplots of viewership}
 plotly::ggplotly(
   vw_episode_season_ratings %>%
-   filter(season_number %in% c("9", "10", "11", "12", "13", "14")) %>%
    ggplot() +
     aes(
       x = season_number,
@@ -88,10 +90,89 @@ plotly::ggplotly(
 )
 ```
 
+
+Run ANOVA and make sure there aren't any violations to normality assumptions
+
+```{r Run Sharpio Wilk test for Normality}
+stats::shapiro.test(vw_episode_season_ratings$viewer_count) %>% 
+  tidy()
+```
+
+
+```{r}
+mtcars %>% 
+  nest(-cyl)  %>% 
+  mutate(fit = map(data, ~ t.test(.$mpg)),
+         results = map(fit, glance))%>% 
+  unnest(results)
+```
+
+Looks like the data violated the Normality assumption 
+
+Going to apply a log transformation to the viewer count, it should account for 
+some of the crazy jumps we've seen... sometimes those marketing campaigns work!
+
+```{r create new columns containing the transformattions}
+views_ratings_model_df <- vw_episode_season_ratings %>% 
+#  filter(episode_number!=1) %>% 
+  filter(season_end!=1) %>% 
+  mutate(  viewer_count_transformed=log(viewer_count)
+         , viewer_rating_transformed=log(viewer_rating)
+         ) %>% 
+  select(season_number,viewer_rating, viewer_count, contains("_transformed")) %>% 
+  pivot_longer(cols = !season_number, names_to = "Measure",values_to = "Value")
+
+```
+
+```{r Run the Sharpio test for normality}
+sharpio_test <- views_ratings_model_df %>%
+  select(-c("season_number")) %>% 
+  nest(Value) %>%  # using nest will createa a new column with teh data... called data 
+  mutate(normal_test=map( data
+                         , ~stats::shapiro.test(.$Value) 
+                         
+                         )
+         , normal_test_results=map(normal_test,broom::glance)
+         
+         ) %>% 
+  unnest(normal_test_results) %>% 
+  select(-c("data","normal_test")) %>% 
+  mutate(p_decision=case_when(  p.value<.05~'Reject H0 ==> Not Normal'
+                              , TRUE~"Retain H0 ==> Normal"
+                              )
+         )
+sharpio_test
+```
+
+Results from the Sharpio test suggest that using the log transformations do their 
+job and make the data normal 
+
+Time to run the ANOVA on these and
+
+```{r}
+# using the %like% operator from data.table
+mdl_test <- views_ratings_model_df %>% 
+  filter(Measure %like% "_transformed")%>% 
+  nest(-Measure) %>%  # using nest will createa a new column with teh data... called data 
+  mutate(anova_model=map( data
+                         , ~aov(formula = .$Value~.$season_number, data=.)
+                         
+                         )
+         , anova_results=map(anova_model,broom::tidy)
+         
+         ) %>% 
+  unnest(anova_results)
+  
+```
+
+There is a significant difference for both viewership and rating 
+
+Time to do a pairwise test to see where the largest differences are!
+
+
 ```{r views changing over time}
 plotly::ggplotly(
   vw_episode_season_ratings %>%
-   filter(season_number %in% c("9", "10", "11", "12", "13", "14")) %>%
    ggplot() +
     aes(
       x = episode_number,
@@ -112,7 +193,6 @@ plotly::ggplotly(
 ```{r}
 plotly::ggplotly(
   vw_episode_season_ratings %>%
-   filter(season_number %in% c("9", "10", "11", "12", "13", "14")) %>%
    ggplot() +
     aes(x = episode_number, y = viewer_rating) +
     geom_line(size = 0.5, colour = "#112446") +
