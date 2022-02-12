@@ -1,9 +1,9 @@
 CREATE VIEW vw_episodes AS 
 
   SELECT 
-      rpdr.season
-    , rpdr.episode
-    , rpdr.airdate
+      rpdr.season as season_number
+    , rpdr.episode as episode_number
+    , rpdr.airdate as air_date
     -- verified that the dates match, not needed in the final table
     --, case when rpdr.airdate=dp.airdate then 1 else 0 end as date_check
       -- titles were similar enough  keeping rpdr column 

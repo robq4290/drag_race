@@ -1,3 +1,4 @@
+-- !preview conn=DBI::dbConnect(RSQLite::SQLite(), dbname = "drag_race_dev.sqlite")
 CREATE VIEW vw_mini_challenge AS
   with base_table AS
   (

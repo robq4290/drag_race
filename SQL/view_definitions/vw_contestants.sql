@@ -11,7 +11,7 @@ CREATE VIEW vw_contestants AS
     , dp.city AS current_city
     , dp.state AS current_state
     , rpdr.city AS home_city 
-    , rpdr.season 
+    , rpdr.season as season_number
     , dp.entrance 
     , dp.place
     , max(dp.place) OVER(PARTITION BY rpdr.season) as season_nbr_queeens

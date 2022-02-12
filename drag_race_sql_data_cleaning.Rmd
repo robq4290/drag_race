@@ -25,16 +25,12 @@ dev_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname = "drag_race_dev.sqlite")
 DBI::dbListTables(dev_conn)
 ```
 
-```{r}
-db_write_table(db_conn=dev_conn
-               , tbl_name = "vw_ep_rtng"
-               , vw_ep_rating)
-```
+
 
 
 ```{sql name check rpdr, connection="dev_conn"}
 select 
-  *
+*
 FROM rpdr_contestants
 WHERE lower(contestant) like 'dida%' 
 
@@ -42,7 +38,7 @@ WHERE lower(contestant) like 'dida%'
 
 ```{sql name check data prog, connection="dev_conn"}
 select 
-  *
+*
 FROM dp_contestants
 WHERE lower(contestant) like 'vic%' 
 
@@ -55,44 +51,44 @@ WHERE lower(contestant) like 'vic%'
 -- because contestant is going to be used as a join key 
 with drag_racer AS
 (
-  SELECT season, contestant FROM rpdr_contestants WHERE season<12
-  
+SELECT season, contestant FROM rpdr_contestants WHERE season<12
+
 ),
 data_progress AS
 (
 
-  SELECT season, contestant FROM dp_contestants
+SELECT season, contestant FROM dp_contestants
 ),
 drag_racer_top AS
 (
 
-  SELECT season, contestant FROM drag_racer
-  
-    EXCEPT 
-  
-  SELECT season, contestant FROM data_progress 
+SELECT season, contestant FROM drag_racer
+
+EXCEPT 
+
+SELECT season, contestant FROM data_progress 
 ),
 data_progress_top AS 
 (
-  SELECT season, contestant FROM data_progress 
-  
-    EXCEPT 
-    
-  SELECT season, contestant FROM rpdr_contestants
-  
+SELECT season, contestant FROM data_progress 
+
+EXCEPT 
+
+SELECT season, contestant FROM rpdr_contestants
+
 ),
 union_table AS 
 (
-  SELECT 'dp_contestants' AS update_table, season, contestant FROM drag_racer_top
-  
-    UNION ALL 
-  
-  SELECT 'rpdr_contestants' AS update_table, season, contestant FROM data_progress_top 
+SELECT 'dp_contestants' AS update_table, season, contestant FROM drag_racer_top
+
+UNION ALL 
+
+SELECT 'rpdr_contestants' AS update_table, season, contestant FROM data_progress_top 
 
 )
 
 SELECT 
-  * 
+* 
 FROM union_table
 ORDER BY contestant, update_table
 
@@ -104,44 +100,44 @@ ORDER BY contestant, update_table
 -- because contestant is going to be used as a join key 
 with drag_racer AS
 (
-  SELECT  contestant FROM rpdr_contestants WHERE season<12
-  
+SELECT  contestant FROM rpdr_contestants WHERE season<12
+
 ),
 family AS
 (
 
-  SELECT  contestant FROM drag_family
+SELECT  contestant FROM drag_family
 ),
 drag_racer_top AS
 (
 
-  SELECT  contestant FROM drag_racer
-  
-    EXCEPT 
-  
-  SELECT contestant FROM family 
+SELECT  contestant FROM drag_racer
+
+EXCEPT 
+
+SELECT contestant FROM family 
 ),
 family_top AS 
 (
-  SELECT  contestant FROM drag_family
-  
-    EXCEPT 
-    
-  SELECT contestant FROM rpdr_contestants
-  
+SELECT  contestant FROM drag_family
+
+EXCEPT 
+
+SELECT contestant FROM rpdr_contestants
+
 ),
 union_table AS 
 (
-  SELECT 'drag_family' AS update_table,  contestant FROM drag_racer_top
-  
-    UNION ALL 
-  
-  SELECT 'rpdr_contestants' AS update_table,  contestant FROM family_top 
+SELECT 'drag_family' AS update_table,  contestant FROM drag_racer_top
+
+UNION ALL 
+
+SELECT 'rpdr_contestants' AS update_table,  contestant FROM family_top 
 
 )
 
 SELECT 
-  * 
+* 
 FROM union_table
 ORDER BY contestant, update_table
 ```
@@ -149,27 +145,27 @@ ORDER BY contestant, update_table
 ```{sql query to create a new contestants table , connection="dev_conn", output.var="vw_contestants"}
 -- only keeping queens that have the same metrics across both data sets 
 SELECT 
-    dp.contestant_id 
-  , rpdr.contestant
-  , rpdr.dob AS birthday
-  , strftime('%Y',rpdr.dob) AS year_born
-  , dp.instagram
-  , dp.twitter
-  , rpdr.state AS home_state
-  , dp.city AS current_city
-  , dp.state AS current_state
-  , rpdr.city AS home_city 
-  , rpdr.season 
-  , dp.entrance 
-  , dp.place
-  , max(dp.place) OVER(PARTITION BY rpdr.season) as season_nbr_queeens
+dp.contestant_id 
+, rpdr.contestant
+, rpdr.dob AS birthday
+, strftime('%Y',rpdr.dob) AS year_born
+, dp.instagram
+, dp.twitter
+, rpdr.state AS home_state
+, dp.city AS current_city
+, dp.state AS current_state
+, rpdr.city AS home_city 
+, rpdr.season 
+, dp.entrance 
+, dp.place
+, max(dp.place) OVER(PARTITION BY rpdr.season) as season_nbr_queeens
 FROM rpdr_contestants rpdr 
 
 INNER JOIN dp_contestants dp
 
-  ON rpdr.contestant = dp.contestant 
-  
-  and rpdr.season=dp.season
+ON rpdr.contestant = dp.contestant 
+
+and rpdr.season=dp.season
 ```
 
 
@@ -184,93 +180,93 @@ select * from dp_episodes limit 1
 ```{sql query to create a new episodes table , connection="dev_conn", output.var="vw_episodes"}
 
 SELECT 
-    rpdr.season
-  , rpdr.episode
-  , rpdr.airdate
-  -- verified that the dates match, not needed in the final table
-  --, case when rpdr.airdate=dp.airdate then 1 else 0 end as date_check
-    -- titles were similar enough  keeping rpdr column 
-  --, case when dp.title=rpdr.nickname then 1 else 0 end as title_check
-  , rpdr.nickname as episode_title 
-  , dp.episode_type 
-  -- Will need to make a new table for minichallenge that can be joined with the dp_ranking table
-  , rpdr.minic as mini_challenge
-  , rpdr.minicw1 as mini_challenge_winner_1
-  , rpdr.minicw1 as mini_challenge_winner_2
-  , rpdr.minicw3 as mini_challenge_winner_3
-  -- going to use the dp_ranking table for top and bottom tracking
-  , dp.challenge_desc 
-  -- This column has a lot of NULLs. Need to find a new source will not
-  -- be able to extract much information from this
-  -- , rpdr.runwaytheme as runway_theme
-  , rpdr.lipsyncartist as lsfyl_artist 
-  , rpdr.lipsyncsong as lsfyl_song
-  , CASE 
-      WHEN (rpdr.eliminated1 IS NOT NULL) AND  (rpdr.eliminated2 IS NOT NULL) THEN 1
-      ELSE 0 
-    END AS flg_mltpl_elim
-  , CASE 
-      WHEN UPPER(rpdr.nickname) LIKE '%SNATCH%' THEN 1
-      ELSE 0 
-    END AS flg_snatch_game
+rpdr.season
+, rpdr.episode
+, rpdr.airdate
+-- verified that the dates match, not needed in the final table
+--, case when rpdr.airdate=dp.airdate then 1 else 0 end as date_check
+-- titles were similar enough  keeping rpdr column 
+--, case when dp.title=rpdr.nickname then 1 else 0 end as title_check
+, rpdr.nickname as episode_title 
+, dp.episode_type 
+-- Will need to make a new table for minichallenge that can be joined with the dp_ranking table
+, rpdr.minic as mini_challenge
+, rpdr.minicw1 as mini_challenge_winner_1
+, rpdr.minicw1 as mini_challenge_winner_2
+, rpdr.minicw3 as mini_challenge_winner_3
+-- going to use the dp_ranking table for top and bottom tracking
+, dp.challenge_desc 
+-- This column has a lot of NULLs. Need to find a new source will not
+-- be able to extract much information from this
+-- , rpdr.runwaytheme as runway_theme
+, rpdr.lipsyncartist as lsfyl_artist 
+, rpdr.lipsyncsong as lsfyl_song
+, CASE 
+WHEN (rpdr.eliminated1 IS NOT NULL) AND  (rpdr.eliminated2 IS NOT NULL) THEN 1
+ELSE 0 
+END AS flg_mltpl_elim
+, CASE 
+WHEN UPPER(rpdr.nickname) LIKE '%SNATCH%' THEN 1
+ELSE 0 
+END AS flg_snatch_game
 
-  
+
 FROM rpdr_episodes rpdr 
 
 INNER JOIN dp_episodes dp
 
-  ON  rpdr.season=dp.season
-  
-  and rpdr.episode=dp.episode
+ON  rpdr.season=dp.season
+
+and rpdr.episode=dp.episode
 ```
 
 ```{sql query to create a new minichallenge table , connection="dev_conn", output.var="vw_mini"}
 with base_table AS
 (
-  SELECT 
-      rpdr.season
-    , rpdr.episode
-    , rpdr.airdate
-    , rpdr.minic as mini_challenge
-    , rpdr.minicw1 as mini_challenge_winner_1
-    , rpdr.minicw1 as mini_challenge_winner_2
-    , rpdr.minicw3 as mini_challenge_winner_3
-  
-    
-  FROM rpdr_episodes rpdr 
+SELECT 
+rpdr.season
+, rpdr.episode
+, rpdr.airdate
+, rpdr.minic as mini_challenge
+, rpdr.minicw1 as mini_challenge_winner_1
+, rpdr.minicw1 as mini_challenge_winner_2
+, rpdr.minicw3 as mini_challenge_winner_3
+
+
+FROM rpdr_episodes rpdr 
 ),
 union_table AS
 ( -- Using UNION because the original columns have duplicates if there was only one winner 
-  SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_1 AS winner FROM base_table 
-  
-    WHERE mini_challenge_winner_1 is not null
-  
-    UNION
+SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_1 AS winner FROM base_table 
 
-  SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_2 AS winner FROM base_table 
-  
-    WHERE mini_challenge_winner_2 is not null
-  
-    UNION 
-    
-  SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_3 AS winner FROM base_table 
-  
-    WHERE mini_challenge_winner_3 is not null
+WHERE mini_challenge_winner_1 is not null
+
+UNION
+
+SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_2 AS winner FROM base_table 
+
+WHERE mini_challenge_winner_2 is not null
+
+UNION 
+
+SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_3 AS winner FROM base_table 
+
+WHERE mini_challenge_winner_3 is not null
 
 
 )
 
 SELECT  
-    season
-  , episode
-  , airdate
-  , mini_challenge
-  , winner
-  , count(winner)OVER(PARTITION BY season, episode) AS "nbr_winners"
-  , CASE 
-      WHEN "nbr_winners">1 THEN 1
-      ELSE 0 
-    END AS flg_mltpl_winners
+season
+, episode
+, airdate
+, mini_challenge
+, winner
+, count(winner)OVER(PARTITION BY season, episode) AS "nbr_winners"
+, CASE 
+WHEN "nbr_winners">1 THEN 1
+ELSE 0 
+END AS flg_mltpl_winners
 FROM union_table
 ```
 
@@ -281,80 +277,80 @@ select * from dp_ranking limit 1
 ```{sql query to create a new ranking table , connection="dev_conn", output.var="vw_ranking"}
 with base_table AS
 (
-  SELECT 
-      rpdr.season
-    , rpdr.episode
-    , rpdr.airdate
-    , rpdr.minic as mini_challenge
-    , rpdr.minicw1 as mini_challenge_winner_1
-    , rpdr.minicw1 as mini_challenge_winner_2
-    , rpdr.minicw3 as mini_challenge_winner_3
-  
-    
-  FROM rpdr_episodes rpdr 
+SELECT 
+rpdr.season
+, rpdr.episode
+, rpdr.airdate
+, rpdr.minic as mini_challenge
+, rpdr.minicw1 as mini_challenge_winner_1
+, rpdr.minicw1 as mini_challenge_winner_2
+, rpdr.minicw3 as mini_challenge_winner_3
+
+
+FROM rpdr_episodes rpdr 
 ),
 union_table AS
 ( -- Using UNION because the original columns have duplicates if there was only one winner 
-  SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_1 AS winner FROM base_table 
-  
-    WHERE mini_challenge_winner_1 is not null
-  
-    UNION
+SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_1 AS winner FROM base_table 
 
-  SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_2 AS winner FROM base_table 
-  
-    WHERE mini_challenge_winner_2 is not null
-  
-    UNION 
-    
-  SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_3 AS winner FROM base_table 
-  
-    WHERE mini_challenge_winner_3 is not null
+WHERE mini_challenge_winner_1 is not null
+
+UNION
+
+SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_2 AS winner FROM base_table 
+
+WHERE mini_challenge_winner_2 is not null
+
+UNION 
+
+SELECT season, episode, airdate, mini_challenge, mini_challenge_winner_3 AS winner FROM base_table 
+
+WHERE mini_challenge_winner_3 is not null
 
 
 )
 
 SELECT  
-    season
-  , episode
-  , airdate
-  , mini_challenge
-  , winner
-  , count(winner)OVER(PARTITION BY season, episode) AS "nbr_winners"
-  , CASE 
-      WHEN "nbr_winners">1 THEN 1
-      ELSE 0 
-    END AS flg_mltpl_winners
+season
+, episode
+, airdate
+, mini_challenge
+, winner
+, count(winner)OVER(PARTITION BY season, episode) AS "nbr_winners"
+, CASE 
+WHEN "nbr_winners">1 THEN 1
+ELSE 0 
+END AS flg_mltpl_winners
 FROM union_table
 ```
 
 ```{r write views to dev database, echo=FALSE, include=FALSE}
 view_path <- here::here("SQL","view_definitions")
 db_create_view(  db_conn=dev_conn
-               , sql_path=view_path
-               , sql_file = "vw_mini_challenge.sql" 
-               )
+                 , sql_path=view_path
+                 , sql_file = "vw_mini_challenge.sql" 
+)
 
 ```
 
 
 ```{sql, connection="dev_conn"}
 SELECT 
-  *
+*
 FROM dp_ranking limit 1 
 
 ```
 
 ```{sql, connection="dev_conn", output.var="vw_episodes"}
 SELECT 
-  *
+*
 FROM vw_episodes 
 
 ```
 
 ```{sql, connection="dev_conn", output.var="df_help"}
 SELECT 
-  distinct runway_position
+distinct runway_position
 FROM dp_ranking
 
 ```
@@ -366,92 +362,89 @@ select * from vw_mini_challenge limit 1
 with base_table AS 
 (
 SELECT 
-    ranks.contestant_id
-  , ranks.season AS "season"
-  , ranks.episode AS "episode" 
-  , ep.episode_title
-  , ep.episode_type
-  , contest.contestant AS "contestant"
-  , mini.mini_challenge
-  , CASE 
-      WHEN mini.winner=contest.contestant THEN 1 
-      ELSE 0 
-    END AS "flg_mini_winner"
-  , ranks.runway_position AS "runway_position"
-  , CASE 
-      WHEN "flg_mini_winner"=1 AND "runway_position" in('Winner','WIN') THEN 1
-      ELSE 0 
-    END AS flg_mini_maxi_winner
-  , CASE 
-      WHEN "flg_mini_winner"=1 AND "runway_position" in('Eliminated','ELIM') THEN 1
-      ELSE 0 
-    END AS flg_mini_winner_eliminated
-  , CASE 
-      WHEN "flg_mini_winner"=1 AND "runway_position" in('SAFE','HIGH') THEN 1 
-      ELSE 0 
-    END AS flg_mini_winner_safe_high
-  , CASE 
-      WHEN "flg_mini_winner"=1 AND "runway_position" in('LOW','BTM2','BTM6') THEN 1 
-      ELSE 0 
-    END AS flg_mini_winner_low
-  , contest.entrance
-  , contest.place
-  , CASE 
-      WHEN "runway_position" in('LOW','BTM2','BTM6')  THEN 1 
-      ELSE 0 
-    END AS flg_low
-  , CASE 
-      WHEN "runway_position" ='SAFE'  THEN 1 
-      ELSE 0 
-    END AS flg_safe
-  , CASE 
-      WHEN "runway_position" in('BTM2','BTM6')  THEN 1 
-      ELSE 0 
-    END AS flg_bottom
-  , CASE 
-      WHEN "runway_position" in('Winner','WIN') THEN 1 
-      ELSE 0 
-    END as flg_winner
+ranks.contestant_id
+, ranks.season AS "season"
+, ranks.episode AS "episode" 
+, ep.episode_title
+, ep.episode_type
+, contest.contestant AS "contestant"
+, mini.mini_challenge
+, CASE 
+WHEN mini.winner=contest.contestant THEN 1 
+ELSE 0 
+END AS "flg_mini_winner"
+, ranks.runway_position AS "runway_position"
+, CASE 
+WHEN "flg_mini_winner"=1 AND "runway_position" in('Winner','WIN') THEN 1
+ELSE 0 
+END AS flg_mini_maxi_winner
+, CASE 
+WHEN "flg_mini_winner"=1 AND "runway_position" in('Eliminated','ELIM') THEN 1
+ELSE 0 
+END AS flg_mini_winner_eliminated
+, CASE 
+WHEN "flg_mini_winner"=1 AND "runway_position" in('SAFE','HIGH') THEN 1 
+ELSE 0 
+END AS flg_mini_winner_safe_high
+, CASE 
+WHEN "flg_mini_winner"=1 AND "runway_position" in('LOW','BTM2','BTM6') THEN 1 
+ELSE 0 
+END AS flg_mini_winner_low
+, contest.entrance
+, contest.place
+, CASE 
+WHEN "runway_position" in('LOW','BTM2','BTM6')  THEN 1 
+ELSE 0 
+END AS flg_low
+, CASE 
+WHEN "runway_position" ='SAFE'  THEN 1 
+ELSE 0 
+END AS flg_safe
+, CASE 
+WHEN "runway_position" in('BTM2','BTM6')  THEN 1 
+ELSE 0 
+END AS flg_bottom
+, CASE 
+WHEN "runway_position" in('Winner','WIN') THEN 1 
+ELSE 0 
+END as flg_winner
 
 FROM dp_ranking ranks
 
 LEFT JOIN vw_episodes ep 
 
-  ON ranks.season=ep.season
-  
-  AND ranks.episode=ep.episode
-  
+ON ranks.season=ep.season
+
+AND ranks.episode=ep.episode
+
 LEFT JOIN vw_mini_challenge mini 
 
-  ON ranks.season=mini.season
-  
-  AND ranks.episode=mini.episode 
-  
+ON ranks.season=mini.season
+
+AND ranks.episode=mini.episode 
+
 LEFT JOIN vw_contestants contest
 
-  ON ranks.contestant_id=contest.contestant_id 
-  
-  AND ranks.season=contest.season
-  
+ON ranks.contestant_id=contest.contestant_id 
+
+AND ranks.season=contest.season
+
 WHERE episode_type='Competition'
-  
+
 )
 
 select 
 
-    *
-    -- doing the running totals here because I dont like using alias.column in window functions
-    -- makes them look more cumbersome then they need to be 
-  , sum(flg_bottom) OVER(PARTITION BY season, contestant_id ORDER BY episode )  AS bottom_count 
-  , sum(flg_low) OVER(PARTITION BY season, contestant_id ORDER BY episode )  AS low_count
-  , sum(flg_winner) OVER(PARTITION BY season, contestant_id ORDER BY episode )  AS win_count
-  , sum(flg_mini_winner) OVER(PARTITION BY season, contestant_id ORDER BY episode ) AS mini_win_count
-  , sum(flg_safe) OVER(PARTITION BY season, contestant_id ORDER BY episode ) AS safe_count
+*
+-- doing the running totals here because I dont like using alias.column in window functions
+-- makes them look more cumbersome then they need to be 
+, sum(flg_bottom) OVER(PARTITION BY season, contestant_id ORDER BY episode )  AS bottom_count 
+, sum(flg_low) OVER(PARTITION BY season, contestant_id ORDER BY episode )  AS low_count
+, sum(flg_winner) OVER(PARTITION BY season, contestant_id ORDER BY episode )  AS win_count
+, sum(flg_mini_winner) OVER(PARTITION BY season, contestant_id ORDER BY episode ) AS mini_win_count
+, sum(flg_safe) OVER(PARTITION BY season, contestant_id ORDER BY episode ) AS safe_count
 from base_table
 ```
 
-```{r}
-
-```
 
 
