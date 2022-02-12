@@ -31,24 +31,6 @@ DBI::dbListTables(conn=drag_conn)
 
 #DBI::dbDisconnect(drag_conn)
 ```
-
-
-```{sql, connection="drag_conn"}
--- Found one missing value in season 13 going to manually change it in the dev db 
-select
-    rtng.air_date
-  , rtng.viewer_rating
-  , rtng.viewer_count 
-from vw_ep_rtng rtng
-inner join vw_episode_season_ratings esr
-
-on rtng.air_date=esr.air_date
-
-where esr.viewer_count is null 
-
-```
-
-
 ```{r get the views as dataframes, echo=FALSE, include=FALSE}
 drag_conn <- rpdr_connection()
 
@@ -78,52 +60,69 @@ vw_episodes <- db_exec_param_query( db_conn=drag_conn
 DBI::dbDisconnect(drag_conn)
 ```
 
-```{r Initialize esquisse to get a look at rating data}
+```{r Initialize esquisse to get a look at rating data, warning=FALSE}
 esquisse::esquisser(vw_episode_season_ratings)
 
 ```
 
 ```{r Boxplots of viewership}
 plotly::ggplotly(
-vw_episode_season_ratings %>%
- filter(season_number %in% c("9", "10", "11", "12", "13", "14")) %>%
- ggplot() +
-  aes(
-    x = season_number,
-    y = viewer_count,
-    colour = season_number
-  ) +
-  geom_boxplot(fill = "#112446") +
-  scale_y_continuous(label=scales::comma_format())+
-  scale_color_viridis_d(option = "viridis", direction = 1) +
-  labs(
-    x = "Season",
-    y = "Viewers ",
-    title = "Drag Race Viewership",
-    subtitle = "Season 9 - 13"
-  ) +
-  theme_classic()
+  vw_episode_season_ratings %>%
+   filter(season_number %in% c("9", "10", "11", "12", "13", "14")) %>%
+   ggplot() +
+    aes(
+      x = season_number,
+      y = viewer_count,
+      colour = season_number
+    ) +
+    geom_boxplot(fill = "#112446") +
+    scale_y_continuous(label=scales::comma_format())+
+    scale_color_viridis_d(option = "viridis", direction = 1) +
+    labs(
+      x = "Season",
+      y = "Viewers ",
+      title = "Drag Race Viewership",
+      subtitle = "Season 9 - 13"
+    ) +
+    theme_classic()
 )
 ```
 
 ```{r views changing over time}
 plotly::ggplotly(
-vw_episode_season_ratings %>%
- filter(season_number %in% c("9", "10", "11", "12", "13", "14")) %>%
- ggplot() +
-  aes(
-    x = episode_number,
-    y = viewer_count
-  ) +
-  geom_line(size = 0.5) +
-  scale_y_continuous(label=scales::comma_format())+
-  labs(
-    x = "Episode Number",
-    y = "Viewers",
-    title = "Season Viewership"
-  ) +
-  theme_minimal() +
-  facet_wrap(vars(season_number))
+  vw_episode_season_ratings %>%
+   filter(season_number %in% c("9", "10", "11", "12", "13", "14")) %>%
+   ggplot() +
+    aes(
+      x = episode_number,
+      y = viewer_count
+    ) +
+    geom_line(size = 0.5) +
+    scale_y_continuous(label=scales::comma_format())+
+    labs(
+      x = "Episode Number",
+      y = "Viewers",
+      title = "Season Viewership Trend"
+    ) +
+    theme_minimal() +
+    facet_wrap(vars(season_number))
+)
+```
+
+```{r}
+plotly::ggplotly(
+  vw_episode_season_ratings %>%
+   filter(season_number %in% c("9", "10", "11", "12", "13", "14")) %>%
+   ggplot() +
+    aes(x = episode_number, y = viewer_rating) +
+    geom_line(size = 0.5, colour = "#112446") +
+    labs(
+      x = "Episode Number",
+      y = "Viewer Rating",
+      title = "Season Rating Trend"
+    ) +
+    theme_minimal() +
+    facet_wrap(vars(season_number))
 )
 ```
 
