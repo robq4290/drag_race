@@ -82,9 +82,9 @@ get_df_col_names_selectable <- function(df_in, alias){
   return(select_out)
 }
 
-<<<<<<< HEAD
+
 rpdr_connection <- function(){
-  DBI::dbConnect(RSQLite::SQLite(), dbname="rpdr.sqlite")
+  DBI::dbConnect(RSQLite::SQLite(), dbname="drag_race_dev.sqlite")
 }
 
 db_exec_param_query <- function(db_conn, file_location, file_name, print_query=FALSE,...){
@@ -101,7 +101,7 @@ db_exec_param_query <- function(db_conn, file_location, file_name, print_query=F
   
   results
 }
-=======
+
 db_write_table <- function(db_conn, tbl_name, df_in){
   
  # df_to_write <- sym(df_in)
@@ -179,4 +179,4 @@ db_write_all_tables <- function(){
   dbDisconnect(db_conn)
   
 }
->>>>>>> sql_transformations
+

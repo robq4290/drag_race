@@ -5,294 +5,125 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 100)
+
 library(tidyverse) 
 library(DBI)
-library(dragracer)
 library(glue)
 library(here)
 library(flexdashboard)
-<<<<<<< HEAD
+# Interactive way to plot things
 library(esquisse)
 library(ggThemeAssist)
-source(here("Functions","db_helper_functions.R"))
-=======
-library(googlesheets4)
 library(miceadds)
 library(rvest)
-library(dm)
 library(stringr)
+library(plotly)
 #source(here("Functions","db_helper_functions.R"))
 # Default file type is .R  if different need to sepcify
 source.all(here("Functions"))
->>>>>>> sql_transformations
 ```
 
-# Data Sources
+```{r open the connection to dev db and get list of avail objects, echo=FALSE}
+drag_conn <- rpdr_connection()
 
-<<<<<<< HEAD
-```{r read in rpdr_hist table, echo=FALSE, include=FALSE}
-rpdr_conn <- rpdr_connection()
-=======
-### dragraceR
+DBI::dbListTables(conn=drag_conn)
 
--   This is a cool library a friend of mine Jessica ([github](https://github.com/jalavery), [twitter](https://twitter.com/jessicalavs)) came across, containing three data sets:
-
-    1.  rpdr_contep: Contestant performance at the Episode level
-
-    2.  rpdr_ep: Episode level
-
-    3.  rpdr_contestants: Contestant level
-
-### [Data for Progress](https://www.dataforprogress.org/)
-
--   A Progressive policy and polling organization. They ran a contest that challenged teams to build a model to accurately predict the winner and loser of each episode. This is outside the scope of my project.
-
--   They gathered [data](https://docs.google.com/spreadsheets/d/1Sotvl3o7J_ckKUg5sRiZTqNQn3hPqhepBSeOpMTK15Q/edit#gid=228427306) through season 10 and made it publicly available:
-
-    1.  all_episodes: Episode Level
-
-    2.  all_contestants: Contestant Level
-
-    3.  all_rankings: Ranking of each contestant in each episode
-
-    4.  all_social_media: Scrape of contestants social media follower counts (not complete)
-
-# Motivation
-
--   The data sources above complement each other. I will use them to demonstrate my ETL skills.
-
--   By the letter:
-
-    -   **E :** Extract data from a library (not difficult) and googleSheets
-
-    -   **T :** Transform during the extraction and follow a data model that allows for joining
-
-    -   **L :** Load the final dataframes into and RSQLite database
-
--   I have significant experience in database management and will be creating an RSQLite database that will be stored in this repository. I chose this route over using AWS because this project will be converted into a library.
-
-    -   If this weren't open source I would write all data into S3 and load into Redshift database
-
-# Goals for next iteration
-
--   Scrape the[DragRace WiKi](https://rupaulsdragrace.fandom.com/wiki/RuPaul%27s_Drag_Race_Wiki) for drag families, exit quotes and other
-
-![](https://64.media.tumblr.com/d016d4a5a6ca854cc186bcc1fe70c0e9/db754f152e7389c3-9b/s500x750/f7dbb99134b1dfa6e475c290dcb61202e1b4c5f1.gifv)
-
-
-### Data For Progress Scrape and Clean, Queen
-
--   Using the googledrive4 library to pull in the data
-
--   **VERY IMPORTANT:** This data is coming from an open source Google sheet, users need to turn Google authentication off. 
-
--   I needed to clean up some of the column types so they were compatible with r data types.
-
-    -   all_social_media's first observation went against the data types of the rest of the rows... embarrassed how long it took me to figure this bug out. PUT A SHADY SOMETHING HERE.
-
--   Check out the [Column Specification](https://googlesheets4.tidyverse.org/reference/range_read.html) section. We don't transform columns like we would reader, a single string for all columns is required... which is annoying but I'll give them a pass because of how easy they've made it!
-
--   For good measure, I am going to trim leading and trailing white space with the trim_ws argument... werk smarter, harder!
-
--   This can be computationally expensive, I am going to save the data frames and then turn this chunk into a function- don't want this chunk unnecessarily running. Please see get_dfp_frames in the data_cleaning_functions.R script. \*\* Add a link to this so the users can jump to see the source code
-
-```{r Read Flat files or scrape from google, echo=FALSE, include=FALSE}
-frame_list <- c("all_episodes", "all_contestants", "all_rankings", "all_social_media")
-
-# can probably replace this with miceadds::load.files()
-for(df in frame_list){
- 
-  rds_name <- glue("{df}.RDS")
-  file_loc <- here("Input",rds_name)
-  
-  if(file.exists(file_loc)){
-    assign(df,readRDS(file_loc))
-    final_logic <- T
-  }else{
-    print(glue("{file_loc} does not exist"))
-    final_logic <- F
-  }
-  
-}
-if(!final_logic){
-  get_dfp_frames(frame_list=frame_list, save_path=here("Input"))
-}
-```
-
-```{r read flat files or scrape drag race wiki, echo=FALSE, include=FALSE }
-drag_family_loop<-c("drag_family_data.RDS", "drag_family_scrape.RDS")
-
-for(df in drag_family_loop){
-    rds_name <- glue("{df}.RDS")
-    file_loc <- here("Input",rds_name)
-  
-    if(file.exists(file_loc)){
-      assign(df,readRDS(file_loc))
-      final_logic <- T
-    }else{
-    print(glue("{file_loc} does not exist"))
-    final_logic <- F
-  }
-  
-}
-if(!final_logic){
-  drag_wiki_data <- get_drag_family_data()
-  
-  drag_family_data <- drag_wiki_data$drag_family_connections
-  
-  drag_family_scrape <- drag_wiki_data$drag_house_frame
-  
-  saveRDS(drag_family_data, file=here::here("Input","drag_family_data.RDS"))
-  
-  saveRDS(drag_family_scrape, file=here::here("Input","drag_family_scrape.RDS"))
-  
-  rm(drag_wiki_data)
-}
-```
-
-### DragRacer Cleaning
-
--   RSQLite is a little funky when it comes to dates, for some reason they need to be stored as characters. Will be using as.character and as_date to transform all date columns
-
-```{r load data from dragracer and transform columns, echo=FALSE, include=FALSE}
-rpdr_contestants <- dragracer::rpdr_contestants %>% 
-  mutate_at(c("dob"),as.character)
-
-rpdr_episodes <- dragracer::rpdr_ep%>% 
-  mutate_at(c("airdate"),as.character) %>% 
-  filter(special==0)
-
-rpdr_combined <- dragracer::rpdr_contep %>% 
-  filter(!is.na(eliminated))
+#DBI::dbDisconnect(drag_conn)
 ```
 
 
-# Key Column Transformations
+```{sql, connection="drag_conn"}
+-- Found one missing value in season 13 going to manually change it in the dev db 
+select
+    rtng.air_date
+  , rtng.viewer_rating
+  , rtng.viewer_count 
+from vw_ep_rtng rtng
+inner join vw_episode_season_ratings esr
 
-## Changing column types and names for clarity
+on rtng.air_date=esr.air_date
 
-### Drag Racer
-
-There are repeated transformations, will be turning into a function when I come back for code clean up/ final documentation 
-```{r drag racer cleaning, echo=FALSE, include=FALSE }
-rpdr_contestants<- rpdr_contestants%>% 
-  mutate(   season=stringr::str_remove(season,"S")
-           ,season=stringr::str_remove(season,"^0") # need to clean this regex up
-         ) %>% 
-  separate(hometown,c("city","state"),",") 
-
-
-rpdr_episodes <- rpdr_episodes %>% 
-  mutate(    season=stringr::str_remove(season,"S")
-           , season=stringr::str_remove(season,"^0") # need to clean this regex up
-           , episode=as.character(episode) 
-         )
-
-rpdr_combined <- rpdr_combined %>% 
-  mutate(    season=stringr::str_remove(season,"S")
-           , season=stringr::str_remove(season,"^0") # need to clean this regex up
-           , episode=as.character(episode) 
-         ) %>% 
-  rename("runway_position"=outcome)
-```
-
-```{r data for progess forgot to change some column names}
-
-all_contestants <- all_contestants %>% 
-  rename(  "season"=season_number
-         , "contestant"=contestant_name
-         , "entrance"=contestant_entrance
-         , "place"=season_outcome
-         , "instagram"=handle_instagram
-         , "twitter"=handle_twitter
-         , "city"=hometown_city
-         , "state"=hometown_state
-  )
-
-all_episodes <- all_episodes %>% 
-  rename(  "season"=season_number
-         , "episode"=episode_number
-         , "airdate"=episode_airdate
-         , "title"=episode_title
-         , "challenge_desc"=episode_maxi_challenge_type
-         )
-
-all_rankings <- all_rankings %>% 
-  rename(  "season"=season_number
-         , "episode"=episode_number
-         , "runway_position"=episode_placement
-
-  )
+where esr.viewer_count is null 
 
 ```
 
-# SQL Table Updates
 
-  Put a link to the drag_race_sql_data_cleaning render 
-  
-  using that as a proxy SQL IDE 
-```{r define sql connection, echo=FALSE, include=FALSE}
-dev_conn <- DBI::dbConnect(RSQLite::SQLite(), dbname = "drag_race_dev.sqlite")
+```{r get the views as dataframes, echo=FALSE, include=FALSE}
+drag_conn <- rpdr_connection()
+
+vw_contestants <- db_exec_param_query( db_conn=drag_conn
+                                      , file_location = "SQL" 
+                                      , file_name = "select_all.sql"
+                                      , object_name="vw_contestants")
+
+vw_mini_challenge <- db_exec_param_query( db_conn=drag_conn
+                                      , file_location = "SQL" 
+                                      , file_name = "select_all.sql"
+                                      , object_name="vw_mini_challenge")
+
+vw_episode_season_ratings <- db_exec_param_query( db_conn=drag_conn
+                                      , file_location = "SQL" 
+                                      , file_name = "select_all.sql"
+                                      , object_name="vw_episode_season_ratings") %>% 
+  mutate_at( "season_number"
+            , list(~factor(.,levels=c("1","2","3","4","5","6","7","8","9","10","11","12","13","14")))
+             )
+
+vw_episodes <- db_exec_param_query( db_conn=drag_conn
+                                      , file_location = "SQL" 
+                                      , file_name = "select_all.sql"
+                                      , object_name="vw_episodes")
+
+DBI::dbDisconnect(drag_conn)
 ```
 
-The only Data for Progress table that needs to be updated is contestants 
-contestant_id is one of the primary keys used to join 
-```{r update name columns to match}
-# Used Shangela as a working example. Going to create a tibble and loop through 
-# db_update_column(dev_conn
-#                  , tbl_name="dp_contestants"
-#                  , column_name="contestant"
-#                  , column_value="Shangela"
-#                  , condition= "Shangela Laquifa Wadley"
-#                  )
-#################
->>>>>>> sql_transformations
+```{r Initialize esquisse to get a look at rating data}
+esquisse::esquisser(vw_episode_season_ratings)
 
-rpdr_hist <-db_exec_param_query(db_conn=rpdr_conn, file_location = "SQL", file_name = "select_all_tbl.sql",table_name=DBI::SQL("rpdr_hist"))
-
-<<<<<<< HEAD
-DBI::dbDisconnect(rpdr_conn)
-=======
->>>>>>> sql_transformations
 ```
 
-```{r tibble to get the contestant tables in sync, echo=FALSE, include=FALSE}
-name_change <- tibble::tribble(~table, ~new_val, ~old_val
-                , 'dp_contestants', "A'Keria C. Davenport" , "A'keria Chanel Davenport"
-                , 'dp_contestants', "Dida Ritz" , "DiDa Ritz"
-                , 'dp_contestants', "Eureka O'Hara" , "Eureka"
-                , 'dp_contestants', "Ra'Jah O'Hara" ,"Ra'jah D. O'Hara"
-                , 'dp_contestants', "Serena Cha Cha","Serena ChaCha"
-                , 'dp_contestants', "Victoria (Porkchop) Parker", "Victoria Porkchop Parker"
-                                      )
+```{r Boxplots of viewership}
+plotly::ggplotly(
+vw_episode_season_ratings %>%
+ filter(season_number %in% c("9", "10", "11", "12", "13", "14")) %>%
+ ggplot() +
+  aes(
+    x = season_number,
+    y = viewer_count,
+    colour = season_number
+  ) +
+  geom_boxplot(fill = "#112446") +
+  scale_y_continuous(label=scales::comma_format())+
+  scale_color_viridis_d(option = "viridis", direction = 1) +
+  labs(
+    x = "Season",
+    y = "Viewers ",
+    title = "Drag Race Viewership",
+    subtitle = "Season 9 - 13"
+  ) +
+  theme_classic()
+)
 ```
 
-
-```{r}
-for(i in 1:nrow(name_change)){
-  
-
-  db_update_column(dev_conn
-                   , tbl_name=name_change$table[i]
-                   , column_name="contestant"
-                   , column_value=name_change$new_val[i]
-                   , condition= name_change$old_val[i]
-                   )
-}
-DBI::dbDisconnect(dev_conn)
-```
-
-```{r Home Town Heros, ehco=FALSE, include=FALSE}
-rpdr_conn <- rpdr_connection()
-home_town_df <- db_exec_param_query(db_conn=rpdr_conn, file_location = "SQL", file_name = "home_town_heros.sql")
-DBI::dbDisconnect(rpdr_conn)
-```
-
-```{r}
-get_seaon_episode_ratings()
-```
-
-```{r}
-dbListTables(dev_conn)
+```{r views changing over time}
+plotly::ggplotly(
+vw_episode_season_ratings %>%
+ filter(season_number %in% c("9", "10", "11", "12", "13", "14")) %>%
+ ggplot() +
+  aes(
+    x = episode_number,
+    y = viewer_count
+  ) +
+  geom_line(size = 0.5) +
+  scale_y_continuous(label=scales::comma_format())+
+  labs(
+    x = "Episode Number",
+    y = "Viewers",
+    title = "Season Viewership"
+  ) +
+  theme_minimal() +
+  facet_wrap(vars(season_number))
+)
 ```
 
